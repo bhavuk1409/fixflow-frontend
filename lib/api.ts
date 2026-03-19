@@ -40,7 +40,21 @@ export type ChatThread = {
   messages: ChatMessage[];
 };
 
-export async function apiFetch(path: string, options: RequestInit = {}) {
+export type ApiResponse<T = any> = {
+  data: T;
+};
+
+function normalizePayload<T>(payload: unknown): ApiResponse<T> {
+  if (payload && typeof payload === "object" && "data" in payload) {
+    return payload as ApiResponse<T>;
+  }
+  return { data: payload as T };
+}
+
+export async function apiFetch<T = any>(
+  path: string,
+  options: RequestInit = {},
+): Promise<ApiResponse<T>> {
   const url = `/api/proxy?path=${encodeURIComponent(path)}`;
   const res = await fetch(url, {
     ...options,
@@ -55,9 +69,18 @@ export async function apiFetch(path: string, options: RequestInit = {}) {
   }
   const contentType = res.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
-    return res.json();
+    const payload = await res.json();
+    return normalizePayload<T>(payload);
   }
-  return res.text();
+  if (
+    contentType.includes("application/pdf") ||
+    contentType.includes("application/octet-stream")
+  ) {
+    const payload = await res.arrayBuffer();
+    return { data: payload as T };
+  }
+  const payload = await res.text();
+  return { data: payload as T };
 }
 
 export function buildApi() {
