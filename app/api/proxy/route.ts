@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 
-const BACKEND_BASE_URL = process.env.BACKEND_INTERNAL_URL || 'http://16.171.0.139:8000';
+const BACKEND_BASE_URL =
+  process.env.BACKEND_INTERNAL_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  'http://127.0.0.1:8000';
 
 async function proxy(req: NextRequest) {
   const url = req.nextUrl.searchParams.get('path') || '';
