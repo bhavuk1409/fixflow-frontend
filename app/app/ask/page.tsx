@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import type { ChatMessage, ChatThread } from "@/lib/api";
 import { useSearchParams } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 
 // ── Suggestion categories ─────────────────────────────────────────────────────
 const SUGGESTIONS = [
@@ -261,6 +262,7 @@ export default function AskPage() {
   const { tenantId, companyId } = useAppState();
   const api = useApi();
   const searchParams = useSearchParams();
+  const { isSignedIn, user } = useUser();
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [activeThreadId, setActiveThreadId] = useState<string | null>(null);
@@ -273,6 +275,126 @@ export default function AskPage() {
   const [streamingText, setStreamingText] = useState("");
   const [streamingTools, setStreamingTools] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [planActive, setPlanActive] = useState(false);
+  const [queriesUsed, setQueriesUsed] = useState(0);
+  const [upgradeLoading, setUpgradeLoading] = useState(false);
+
+  type RazorpayHandlerResponse = {
+    razorpay_subscription_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+  };
+
+  type RazorpayFailureResponse = {
+    error?: {
+      description?: string;
+      reason?: string;
+    };
+  };
+
+  type RazorpayCheckoutOptions = {
+    key: string;
+    subscription_id: string;
+    name: string;
+    description: string;
+    prefill?: {
+      name?: string;
+      email?: string;
+      contact?: string;
+    };
+    notes?: Record<string, string>;
+    theme?: { color: string };
+    modal?: {
+      ondismiss?: () => void;
+    };
+    handler: (response: RazorpayHandlerResponse) => void | Promise<void>;
+  };
+
+  const RAZORPAY_CHECKOUT_URL = "https://checkout.razorpay.com/v1/checkout.js";
+
+  const loadRazorpayScript = async (): Promise<boolean> => {
+    if (typeof window === "undefined") return false;
+    if ((window as Window & { Razorpay?: unknown }).Razorpay) return true;
+    return await new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = RAZORPAY_CHECKOUT_URL;
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleUpgradeCheckout = async () => {
+    if (!isSignedIn || !user) {
+      toast.error("Sign in to upgrade your plan.");
+      return;
+    }
+    setUpgradeLoading(true);
+    try {
+      const scriptReady = await loadRazorpayScript();
+      const RazorpayCtor = (window as Window & {
+        Razorpay?: new (options: RazorpayCheckoutOptions) => {
+          open: () => void;
+          on: (event: "payment.failed", callback: (response: RazorpayFailureResponse) => void) => void;
+        };
+      }).Razorpay;
+      if (!scriptReady || !RazorpayCtor) {
+        throw new Error("Unable to load Razorpay checkout.");
+      }
+
+      const subscriptionRes = await api.payments.createRazorpaySubscription(tenantId, {
+        plan_id: "growth",
+        billing_cycle: "monthly",
+        customer_name: user.fullName ?? undefined,
+        customer_email: user.primaryEmailAddress?.emailAddress ?? undefined,
+      });
+      const subscription = subscriptionRes.data;
+
+      const checkout = new RazorpayCtor({
+        key: subscription.key_id,
+        subscription_id: subscription.subscription_id,
+        name: subscription.business_name,
+        description: "Fixflow Growth Plan (₹99/month)",
+        prefill: {
+          name: user.fullName ?? "",
+          email: user.primaryEmailAddress?.emailAddress ?? "",
+        },
+        notes: {
+          tenant_id: tenantId,
+          plan_id: "growth",
+          billing_cycle: "monthly",
+        },
+        theme: { color: "#3B82F6" },
+        modal: {
+          ondismiss: () => toast.message("Checkout cancelled."),
+        },
+        handler: async (response) => {
+          await api.payments.verifyRazorpaySubscription(tenantId, {
+            plan_id: "growth",
+            billing_cycle: "monthly",
+            razorpay_subscription_id: response.razorpay_subscription_id,
+            razorpay_payment_id: response.razorpay_payment_id,
+            razorpay_signature: response.razorpay_signature,
+          });
+          setPlanActive(true);
+          setQueriesUsed(0);
+          toast.success("Plan upgraded successfully (₹99/month).");
+        },
+      });
+
+      checkout.on("payment.failed", (event) => {
+        const reason = event.error?.description || event.error?.reason || "Payment failed.";
+        toast.error(reason);
+      });
+      checkout.open();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to start checkout.";
+      toast.error(message);
+    } finally {
+      setUpgradeLoading(false);
+    }
+  };
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -306,6 +428,27 @@ export default function AskPage() {
   useEffect(() => {
     if (showSidebar) loadThreads();
   }, [showSidebar, loadThreads]);
+
+  useEffect(() => {
+    let mounted = true;
+    const loadSettings = async () => {
+      try {
+        const res = await api.settings.get(tenantId);
+        if (!mounted) return;
+        const settings = res.data as { plan_active?: boolean; ai_cfo_queries_used?: number };
+        setPlanActive(Boolean(settings.plan_active));
+        setQueriesUsed(Number(settings.ai_cfo_queries_used ?? 0));
+      } catch {
+        if (!mounted) return;
+        setPlanActive(false);
+        setQueriesUsed(0);
+      }
+    };
+    loadSettings();
+    return () => {
+      mounted = false;
+    };
+  }, [api, tenantId]);
 
   // Auto-save thread after every complete AI reply
   const saveThread = useCallback(
@@ -371,7 +514,7 @@ export default function AskPage() {
               setStreamingTools((prev) => [...prev, event.name]);
               finalTools = [...finalTools, event.name];
             } else if (event.type === "done") {
-              finalTools = event.tool_calls_made ?? finalTools;
+              finalTools = event.tools_used ?? finalTools;
             } else if (event.type === "error") {
               toast.error(event.message ?? "AI error");
             }
@@ -390,8 +533,16 @@ export default function AskPage() {
 
       // Persist to backend
       await saveThread(finalMessages);
+      if (!planActive) {
+        setQueriesUsed((v) => Math.min(5, v + 1));
+      }
     } catch (e: any) {
-      toast.error(e?.message ?? "Failed to reach AI CFO");
+      const message = e?.message ?? "Failed to reach AI CFO";
+      if (typeof message === "string" && message.toLowerCase().includes("starter limit reached")) {
+        toast.message(message);
+      } else {
+        toast.error(message);
+      }
     } finally {
       setStreaming(false);
       setStreamingText("");
@@ -544,6 +695,20 @@ export default function AskPage() {
       {/* Input bar */}
       <div className="border-t border-border bg-card/80 px-4 py-4 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl flex-col gap-3">
+          {!planActive && (
+            <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3">
+              <p className="text-xs font-medium text-foreground">
+                Starter plan: {Math.max(0, 5 - queriesUsed)} of 5 AI CFO queries left this month.
+              </p>
+              <button
+                onClick={handleUpgradeCheckout}
+                disabled={upgradeLoading}
+                className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90 disabled:opacity-60"
+              >
+                {upgradeLoading ? "Opening..." : "Upgrade"}
+              </button>
+            </div>
+          )}
           {/* Suggestion chips after first message */}
           {messages.length > 0 && messages.length < 4 && (
             <div className="flex flex-wrap gap-2">

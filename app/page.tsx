@@ -346,22 +346,36 @@ export default function LandingPage() {
               Start free. No card required. Upgrade when you scale.
             </motion.p>
 
-            <motion.div variants={stagger} className="mt-10 grid gap-4 sm:grid-cols-3">
+            <motion.div variants={stagger} className="mt-10 grid gap-4 sm:grid-cols-2">
               {[
                 {
                   name: "Starter", price: "Free", period: "forever",
-                  features: ["1 Tally company", "Live P&L dashboard", "Last 30 days data", "Basic AI Analyst", "GST summary", "Email reports"],
+                  features: [
+                    "Perfect for getting started",
+                    "No credit card required",
+                    "1 Tally company",
+                    "Live P&L & cashflow",
+                    "Basic receivables & payables",
+                    "5 AI CFO queries / month",
+                    "2 reports / month",
+                    "Email support",
+                  ],
                   cta: "Get started free", href: "/sign-up", highlight: false,
                 },
                 {
-                  name: "Growth", price: "₹1,999", period: "/month",
-                  features: ["3 companies", "Full history", "Full AI Analyst", "Inventory insights", "Anomaly detection", "Priority support", "Custom date ranges"],
-                  cta: "Start free trial", href: "/sign-up", highlight: true,
-                },
-                {
-                  name: "Enterprise", price: "Custom", period: "",
-                  features: ["Unlimited companies", "CA firm dashboard", "Multi-user access", "Dedicated support", "Custom integrations", "On-premise option"],
-                  cta: "Talk to us", href: "mailto:sales@fixflow.app", highlight: false,
+                  name: "Growth", price: "₹99", period: "/month",
+                  features: [
+                    "For growing businesses",
+                    "Up to 5 Tally companies",
+                    "Full financial intelligence suite",
+                    "Unlimited AI CFO queries",
+                    "Weekly automated reports",
+                    "PDF download + email delivery",
+                    "Receivables aging analysis",
+                    "Payables management view",
+                    "Priority support",
+                  ],
+                  cta: "Upgrade to Growth", href: "/pricing", highlight: true,
                 },
               ].map((plan) => (
                 <motion.div

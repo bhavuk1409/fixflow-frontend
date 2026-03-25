@@ -5,7 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Building2, Mail, Plus, Trash2, CheckCircle2, XCircle, Loader2, Save, Wifi,
-  Shield, Bell, Palette, Key, ChevronRight, Moon, Sun, Monitor, User,
+  Bell, Palette, Moon, Sun, Monitor,
 } from "lucide-react";
 import { useAppState } from "@/lib/store";
 import { useApi } from "@/lib/useApi";
@@ -27,7 +27,6 @@ const NAV_ITEMS = [
   { id: "reports",    label: "Report Email",   icon: Mail      },
   { id: "notifs",     label: "Notifications",  icon: Bell      },
   { id: "api",        label: "API & Health",   icon: Wifi      },
-  { id: "security",   label: "Security",       icon: Shield    },
 ];
 
 // ── Section card wrapper ──────────────────────────────────────────────────────
@@ -501,33 +500,6 @@ export default function SettingsPage() {
                           {process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8000"}/health
                         </code>
                       </p>
-                    </div>
-                  </SectionCard>
-                </motion.div>
-              )}
-
-              {activeSection === "security" && (
-                <motion.div key="security" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                  <SectionCard icon={Shield} title="Security" description="Account security settings">
-                    <div className="flex flex-col gap-3">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-sm font-medium">Two-factor authentication</p>
-                          <p className="text-xs text-muted-foreground">Managed via Clerk Auth</p>
-                        </div>
-                        <button className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-secondary">
-                          Manage <ChevronRight className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      <div className="flex items-center justify-between border-t border-border pt-3">
-                        <div>
-                          <p className="text-sm font-medium">API Keys</p>
-                          <p className="text-xs text-muted-foreground">Access keys for third-party integrations</p>
-                        </div>
-                        <button className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-secondary">
-                          <Key className="h-3.5 w-3.5" /> View Keys
-                        </button>
-                      </div>
                     </div>
                   </SectionCard>
                 </motion.div>

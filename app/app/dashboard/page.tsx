@@ -49,7 +49,7 @@ type MonthlyChartPoint = {
 };
 
 type RazorpayHandlerResponse = {
-  razorpay_order_id: string;
+  razorpay_subscription_id: string;
   razorpay_payment_id: string;
   razorpay_signature: string;
 };
@@ -63,11 +63,9 @@ type RazorpayFailureResponse = {
 
 type RazorpayCheckoutOptions = {
   key: string;
-  amount: number;
-  currency: string;
+  subscription_id: string;
   name: string;
   description: string;
-  order_id: string;
   prefill?: {
     name?: string;
     email?: string;
@@ -270,20 +268,18 @@ export default function DashboardPage() {
         throw new Error("Unable to load Razorpay checkout.");
       }
 
-      const orderRes = await api.payments.createRazorpayOrder(tenantId, {
+      const subscriptionRes = await api.payments.createRazorpaySubscription(tenantId, {
         plan_id: "growth",
         billing_cycle: "monthly",
         customer_name: user.fullName ?? undefined,
         customer_email: user.primaryEmailAddress?.emailAddress ?? undefined,
       });
-      const order = orderRes.data;
+      const subscription = subscriptionRes.data;
 
       const checkout = new window.Razorpay({
-        key: order.key_id,
-        order_id: order.order_id,
-        amount: order.amount,
-        currency: order.currency,
-        name: order.business_name,
+        key: subscription.key_id,
+        subscription_id: subscription.subscription_id,
+        name: subscription.business_name,
         description: "Fixflow Growth Plan (₹99/month)",
         prefill: {
           name: user.fullName ?? "",
@@ -302,10 +298,10 @@ export default function DashboardPage() {
         },
         handler: async (response) => {
           try {
-            await api.payments.verifyRazorpayPayment(tenantId, {
+            await api.payments.verifyRazorpaySubscription(tenantId, {
               plan_id: "growth",
               billing_cycle: "monthly",
-              razorpay_order_id: response.razorpay_order_id,
+              razorpay_subscription_id: response.razorpay_subscription_id,
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_signature: response.razorpay_signature,
             });

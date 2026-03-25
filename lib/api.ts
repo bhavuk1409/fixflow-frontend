@@ -78,6 +78,45 @@ export type RazorpayVerifyPaymentResponse = {
   billing_cycle: RazorpayBillingCycle;
 };
 
+export type RazorpayCreateSubscriptionRequest = {
+  plan_id?: RazorpayPlanId;
+  billing_cycle: RazorpayBillingCycle;
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
+};
+
+export type RazorpayCreateSubscriptionResponse = {
+  key_id: string;
+  subscription_id: string;
+  plan_id: RazorpayPlanId;
+  billing_cycle: RazorpayBillingCycle;
+  business_name: string;
+  description: string;
+};
+
+export type RazorpayVerifySubscriptionRequest = {
+  plan_id?: RazorpayPlanId;
+  billing_cycle: RazorpayBillingCycle;
+  razorpay_subscription_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+};
+
+export type RazorpayVerifySubscriptionResponse = {
+  status: "verified";
+  subscription_id: string;
+  payment_id: string;
+  plan_id: RazorpayPlanId;
+  billing_cycle: RazorpayBillingCycle;
+  subscription_status: string;
+};
+
+export type RazorpayCancelSubscriptionResponse = {
+  status: "cancelled";
+  subscription_id: string;
+};
+
 export type ApiResponse<T = any> = {
   data: T;
 };
@@ -103,7 +142,20 @@ export async function apiFetch<T = any>(
   });
   if (!res.ok) {
     const text = await res.text().catch(() => res.statusText);
-    throw new Error(text || `Request failed with status ${res.status}`);
+    let message = text || `Request failed with status ${res.status}`;
+    try {
+      const parsed = text ? JSON.parse(text) : null;
+      if (parsed && typeof parsed === "object") {
+        if (typeof (parsed as { detail?: unknown }).detail === "string") {
+          message = (parsed as { detail: string }).detail;
+        } else if (typeof (parsed as { error?: unknown }).error === "string") {
+          message = (parsed as { error: string }).error;
+        }
+      }
+    } catch {
+      // Keep raw text fallback.
+    }
+    throw new Error(message);
   }
   const contentType = res.headers.get("content-type") || "";
   if (contentType.includes("application/json")) {
@@ -217,7 +269,20 @@ export function buildApi() {
         );
         if (!res.ok) {
           const text = await res.text().catch(() => res.statusText);
-          throw new Error(text || `Chat request failed (${res.status})`);
+          let message = text || `Chat request failed (${res.status})`;
+          try {
+            const parsed = text ? JSON.parse(text) : null;
+            if (parsed && typeof parsed === "object") {
+              if (typeof (parsed as { detail?: unknown }).detail === "string") {
+                message = (parsed as { detail: string }).detail;
+              } else if (typeof (parsed as { error?: unknown }).error === "string") {
+                message = (parsed as { error: string }).error;
+              }
+            }
+          } catch {
+            // Keep raw text fallback.
+          }
+          throw new Error(message);
         }
         return res.body!;
       },
@@ -285,6 +350,35 @@ export function buildApi() {
           {
             method: "POST",
             body: JSON.stringify(payload),
+          },
+        ),
+      createRazorpaySubscription: async (
+        tenantId: string,
+        payload: RazorpayCreateSubscriptionRequest,
+      ) =>
+        apiFetch<RazorpayCreateSubscriptionResponse>(
+          `/payments/${tenantId}/razorpay/subscription`,
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          },
+        ),
+      verifyRazorpaySubscription: async (
+        tenantId: string,
+        payload: RazorpayVerifySubscriptionRequest,
+      ) =>
+        apiFetch<RazorpayVerifySubscriptionResponse>(
+          `/payments/${tenantId}/razorpay/subscription/verify`,
+          {
+            method: "POST",
+            body: JSON.stringify(payload),
+          },
+        ),
+      cancelRazorpaySubscription: async (tenantId: string) =>
+        apiFetch<RazorpayCancelSubscriptionResponse>(
+          `/payments/${tenantId}/razorpay/subscription/cancel`,
+          {
+            method: "POST",
           },
         ),
     },

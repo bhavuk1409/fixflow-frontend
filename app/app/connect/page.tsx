@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
+import { useRouter } from "next/navigation";
 import {
   Copy, Check, RefreshCw, Monitor, Apple, AlertCircle, Info,
   ExternalLink, Zap, CheckCircle2, Clock, Download, Wifi, WifiOff,
@@ -232,6 +233,7 @@ function isAuthOrValidationPollError(err: unknown): boolean {
 
 // ── Main page ──────────────────────────────────────────────────────────────
 export default function ConnectPage() {
+  const router = useRouter();
   const { tenantId: ctxTenantId, companyId: storedCompanyId, setCompanyId } = useAppState();
   const tenantId = ctxTenantId || process.env.NEXT_PUBLIC_DEFAULT_TENANT_ID || "test_tenant";
   const api = useApi();
@@ -241,6 +243,7 @@ export default function ConnectPage() {
   const [paired, setPaired] = useState(false);
   const [syncedCompany, setSyncedCompany] = useState<Company | null>(null);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const [upgradeNotice, setUpgradeNotice] = useState<string | null>(null);
   const pairPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const syncPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const connectorPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -301,7 +304,7 @@ export default function ConnectPage() {
 
         // Only toast when status transitions TO "error" (not every poll tick)
         if (status === "error" && prev !== "error") {
-          toast.error(
+          toast.message(
             error_message?.includes("Cannot connect to Tally")
               ? "Tally sync failed — Tally ERP appears to be offline. Please ensure Tally is running."
               : `Sync error: ${error_message ?? "Unknown error"}`,
@@ -313,7 +316,7 @@ export default function ConnectPage() {
       } catch (err) {
         if (!connectorPollErrorShownRef.current && isAuthOrValidationPollError(err)) {
           connectorPollErrorShownRef.current = true;
-          toast.error("Connector status check failed (auth). Refresh the page and sign in again.");
+          toast.message("Connector status check failed (auth). Refresh the page and sign in again.");
         }
       }
     };
@@ -413,7 +416,7 @@ export default function ConnectPage() {
             clearInterval(syncPollRef.current);
             syncPollRef.current = null;
           }
-          toast.error("Sync status check failed (auth). Refresh, generate a new pairing code, and retry.");
+          toast.message("Sync status check failed (auth). Refresh, generate a new pairing code, and retry.");
         }
       }
     }, 3000);
@@ -466,10 +469,22 @@ export default function ConnectPage() {
       setCodeExpired(false);
       setPaired(false);
       setSyncedCompany(null);
+      setUpgradeNotice(null);
       toast.success("Pairing code ready!");
       startPairPolling(pairData.code);
     },
-    onError: (e: Error) => toast.error(`Failed: ${e.message}`),
+    onError: (e: Error) => {
+      const message = String(e.message || "Unable to generate pairing code.");
+      const isPlanLimit = message.includes("Starter plan allows only 1 Tally company");
+      if (isPlanLimit) {
+        const upgradeText = "Starter supports 1 company. Upgrade to Growth for up to 5 companies.";
+        setUpgradeNotice(upgradeText);
+        toast.message(upgradeText);
+        return;
+      }
+      setUpgradeNotice(null);
+      toast.message(message);
+    },
   });
 
   const handleCopy = useCallback(() => {
@@ -507,6 +522,25 @@ export default function ConnectPage() {
             Pair Fixflow with your Tally ERP in under 2 minutes. No manual exports — ever.
           </p>
         </motion.div>
+
+        {upgradeNotice && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex items-center justify-between gap-3 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-amber-900 shadow-sm"
+          >
+            <div className="flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              <p className="text-sm font-medium">{upgradeNotice}</p>
+            </div>
+            <button
+              onClick={() => router.push("/pricing")}
+              className="shrink-0 rounded-lg bg-amber-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-amber-800"
+            >
+              View plans
+            </button>
+          </motion.div>
+        )}
 
         {/* 3-step visual flow */}
         <motion.div
