@@ -26,20 +26,23 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   if (shouldBlockAccess) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-slate-950 px-6 py-16">
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden px-6 py-16" style={{ background: "#0a1a0f" }}>
         <div
           aria-hidden
           className="pointer-events-none absolute inset-0 opacity-70"
           style={{
             background:
-              "radial-gradient(circle at 15% 20%, rgba(59, 130, 246, 0.28), transparent 45%), radial-gradient(circle at 85% 80%, rgba(34, 211, 238, 0.2), transparent 40%)",
+              "radial-gradient(circle at 15% 20%, rgba(16, 64, 28, 0.5), transparent 45%), radial-gradient(circle at 85% 80%, rgba(74, 222, 128, 0.22), transparent 40%)",
           }}
         />
-        <div className="relative w-full max-w-2xl rounded-3xl border border-white/15 bg-white/[0.06] p-8 text-center shadow-2xl backdrop-blur-xl sm:p-12">
-          <h1 className="mt-5 text-3xl font-semibold leading-tight text-white sm:text-4xl">
+        <div
+          className="relative w-full max-w-2xl rounded-3xl border p-8 text-center shadow-2xl backdrop-blur-xl sm:p-12"
+          style={{ borderColor: "rgba(74,222,128,0.2)", background: "rgba(255,255,255,0.02)" }}
+        >
+          <h1 className="text-3xl font-semibold leading-tight text-white sm:text-4xl">
             This experience is available on desktop and laptop only
           </h1>
-          <p className="mt-4 text-sm text-slate-200 sm:text-base">
+          <p className="mt-4 text-sm sm:text-base" style={{ color: "#8fa88f" }}>
             You are logged in. To continue, please sign in from a desktop or laptop browser for the full Fixflow
             experience.
           </p>

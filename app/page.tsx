@@ -32,16 +32,16 @@ export default function LandingPage() {
     <div className="min-h-screen" style={{ background: "#0a1a0f", color: "#e8f5e9" }}>
 
       {/* ── ANNOUNCEMENT BAR ────────────────────────────────────────────── */}
-      <div className="flex items-center justify-center gap-2 border-b py-2.5 text-[12px] font-medium" style={{ borderColor: "rgba(74,222,128,0.15)", background: "rgba(0,0,0,0.3)" }}>
-        <span style={{ color: "#9ba7a0" }}>Introducing Fixflow — AI Business Analyst built for Tally users across India.</span>
+      <div className="flex flex-wrap items-center justify-center gap-2 border-b px-4 py-2.5 text-center text-[12px] font-medium" style={{ borderColor: "rgba(74,222,128,0.15)", background: "rgba(0,0,0,0.3)" }}>
+        <span style={{ color: "#9ba7a0" }}>Introducing Fixflow - AI Business Analyst built for Tally users across India.</span>
         <Link href="/sign-up" className="font-semibold underline underline-offset-2 transition hover:no-underline" style={{ color: "#4ade80" }}>
-          Get early access →
+          Get early access
         </Link>
       </div>
 
       {/* ── NAV ─────────────────────────────────────────────────────────── */}
       <nav className="sticky top-0 z-50 border-b" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(10,26,15,0.92)", backdropFilter: "blur(20px)" }}>
-        <div className="mx-auto flex h-[60px] max-w-6xl items-center justify-between px-6">
+        <div className="mx-auto flex min-h-[64px] w-full max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-2 sm:h-[60px] sm:flex-nowrap sm:gap-0 sm:px-6">
           <Link href="/" className="flex items-center gap-2.5">
             <div style={{ color: "#4ade80" }}>
               <FixflowMark size={26} />
@@ -65,17 +65,17 @@ export default function LandingPage() {
             ))}
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="ml-auto flex items-center gap-2 sm:ml-0 sm:gap-3">
             <Link
               href="/sign-in"
-              className="rounded-full border px-4 py-1.5 text-[13px] font-medium text-white transition hover:border-white/30"
+              className="rounded-full border px-3 py-1.5 text-[12px] font-medium text-white transition hover:border-white/30 sm:px-4 sm:text-[13px]"
               style={{ borderColor: "rgba(255,255,255,0.18)", background: "transparent" }}
             >
               Login
             </Link>
             <Link
               href="/sign-up"
-              className="group flex items-center gap-1.5 rounded-full px-4 py-1.5 text-[13px] font-bold text-black transition hover:opacity-90"
+              className="group flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-bold text-black transition hover:opacity-90 sm:px-4 sm:text-[13px]"
               style={{ background: "#4ade80" }}
             >
               Get Started
@@ -88,9 +88,11 @@ export default function LandingPage() {
       {/* ── HERO ─────────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden" style={{ minHeight: "calc(100vh - 100px)" }}>
         {/* Staged arc/ribbon animation — right side */}
-        <HeroArcs />
+        <div className="hidden sm:block">
+          <HeroArcs />
+        </div>
 
-        <div className="relative mx-auto flex min-h-[calc(100vh-100px)] max-w-6xl items-center px-6 pb-20 pt-20">
+        <div className="relative mx-auto flex min-h-[calc(100vh-100px)] w-full max-w-7xl items-center px-4 pb-14 pt-14 sm:px-6 sm:pb-20 sm:pt-20">
           <motion.div
             initial="hidden"
             animate="show"
@@ -99,7 +101,7 @@ export default function LandingPage() {
           >
             <motion.h1
               variants={fadeUp}
-              className="text-[44px] font-extrabold leading-[1.08] tracking-[-0.03em] text-white sm:text-[60px] lg:text-[68px]"
+              className="text-[38px] font-extrabold leading-[1.08] tracking-[-0.03em] text-white sm:text-[60px] lg:text-[68px]"
             >
               Your Tally data,<br />
               <span style={{ color: "#4ade80" }}>instantly</span><br />
@@ -115,10 +117,10 @@ export default function LandingPage() {
               in plain English — get accurate, data-backed answers from your own books.
             </motion.p>
 
-            <motion.div variants={fadeUp} className="mt-8 flex items-center gap-4">
+            <motion.div variants={fadeUp} className="mt-8 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:gap-4">
               <Link
                 href="/sign-up"
-                className="group flex items-center gap-2 rounded-full px-6 py-3 text-[14px] font-bold text-black transition hover:opacity-90"
+                className="group flex items-center justify-center gap-2 rounded-full px-6 py-3 text-[14px] font-bold text-black transition hover:opacity-90"
                 style={{ background: "#4ade80" }}
               >
                 Start for free
@@ -126,7 +128,7 @@ export default function LandingPage() {
               </Link>
               <Link
                 href="#features"
-                className="rounded-full border px-6 py-3 text-[14px] font-medium text-white transition hover:border-white/30"
+                className="rounded-full border px-6 py-3 text-center text-[14px] font-medium text-white transition hover:border-white/30"
                 style={{ borderColor: "rgba(255,255,255,0.18)" }}
               >
                 See how it works
@@ -159,7 +161,7 @@ export default function LandingPage() {
         className="border-y py-10"
         style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.15)" }}
       >
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <p className="mb-7 text-center text-[11px] font-semibold uppercase tracking-widest" style={{ color: "#4a6a4a" }}>
             Works with your Tally setup
           </p>
@@ -182,8 +184,8 @@ export default function LandingPage() {
 
       {/* ── STATS ───────────────────────────────────────────────────────── */}
       <section className="py-20">
-        <div className="mx-auto max-w-4xl px-6">
-          <div className="grid grid-cols-3 gap-8 text-center">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <div className="grid grid-cols-1 gap-10 text-center sm:grid-cols-3 sm:gap-8">
             {[
               { num: "2 min", label: "To connect", sub: "One-click Tally setup, no IT needed" },
               { num: "100%", label: "SQL-verified", sub: "Every answer is deterministic, not guessed" },
@@ -196,7 +198,7 @@ export default function LandingPage() {
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.12, duration: 0.5 }}
               >
-                <p className="text-[52px] font-extrabold leading-none tracking-tight" style={{ color: "#4ade80" }}>
+                <p className="text-[46px] font-extrabold leading-none tracking-tight sm:text-[52px]" style={{ color: "#4ade80" }}>
                   {stat.num}
                 </p>
                 <p className="mt-2 text-[15px] font-semibold text-white">{stat.label}</p>
@@ -209,7 +211,7 @@ export default function LandingPage() {
 
       {/* ── FEATURES ──────────────────────────────────────────────────────── */}
       <section id="features" className="py-20">
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <motion.div
             initial="hidden"
             whileInView="show"
@@ -220,8 +222,10 @@ export default function LandingPage() {
             <motion.div variants={fadeUp} className="mb-4 inline-flex rounded-full border px-3 py-1 text-[12px] font-semibold" style={{ borderColor: "rgba(74,222,128,0.3)", color: "#4ade80", background: "rgba(74,222,128,0.08)" }}>
               Core Capabilities
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-[36px] font-extrabold tracking-tight text-white sm:text-[44px]">
-              From accounting records<br />to business intelligence
+            <motion.h2 variants={fadeUp} className="text-[32px] font-extrabold tracking-tight text-white sm:text-[44px]">
+              From accounting records
+              <br className="hidden sm:block" />
+              to business intelligence
             </motion.h2>
             <motion.p variants={fadeUp} className="mt-3 text-[15px]" style={{ color: "#8fa88f" }}>
               Fixflow connects to Tally in one click and turns your books into clear, actionable answers.
@@ -288,16 +292,19 @@ export default function LandingPage() {
 
       {/* ── ENTERPRISE SECTION (light bg) ────────────────────────────────── */}
       <section className="py-20" style={{ background: "#f0f4f0" }}>
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <div className="mb-12 text-center">
             <div className="mb-4 inline-flex rounded-full border px-3 py-1 text-[12px] font-semibold" style={{ borderColor: "rgba(34,197,94,0.4)", color: "#16a34a", background: "rgba(34,197,94,0.08)" }}>
               Security & Trust
             </div>
-            <h2 className="text-[36px] font-extrabold tracking-tight sm:text-[44px]" style={{ color: "#0f2810" }}>
-              Built for finance teams<br />that need to trust their data
+            <h2 className="text-[32px] font-extrabold tracking-tight sm:text-[44px]" style={{ color: "#0f2810" }}>
+              Built for finance teams
+              <br className="hidden sm:block" />
+              that need to trust their data
             </h2>
             <p className="mt-3 text-[15px]" style={{ color: "#4a6a4a" }}>
-              Trust is a first-class product feature. Every answer is auditable,<br />every query is logged, and your books are never modified.
+              Trust is a first-class product feature. Every answer is auditable, every query is logged, and your books
+              are never modified.
             </p>
           </div>
 
@@ -329,7 +336,7 @@ export default function LandingPage() {
 
       {/* ── PRICING ───────────────────────────────────────────────────────── */}
       <section id="pricing" className="py-20">
-        <div className="mx-auto max-w-4xl px-6 text-center">
+        <div className="mx-auto max-w-5xl px-4 text-center sm:px-6">
           <motion.div
             initial="hidden"
             whileInView="show"
@@ -339,7 +346,7 @@ export default function LandingPage() {
             <motion.div variants={fadeUp} className="mb-4 inline-flex rounded-full border px-3 py-1 text-[12px] font-semibold" style={{ borderColor: "rgba(74,222,128,0.3)", color: "#4ade80", background: "rgba(74,222,128,0.08)" }}>
               Pricing
             </motion.div>
-            <motion.h2 variants={fadeUp} className="text-[36px] font-extrabold tracking-tight text-white">
+            <motion.h2 variants={fadeUp} className="text-[32px] font-extrabold tracking-tight text-white sm:text-[36px]">
               Simple, transparent pricing
             </motion.h2>
             <motion.p variants={fadeUp} className="mt-2 text-[14px]" style={{ color: "#8fa88f" }}>
@@ -425,7 +432,7 @@ export default function LandingPage() {
       {/* ── CTA BANNER ────────────────────────────────────────────────────── */}
       <section className="relative overflow-hidden py-24">
         {/* Left-aligned layout like DeltaMemory CTA */}
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <motion.div
             initial="hidden"
             whileInView="show"
@@ -437,12 +444,14 @@ export default function LandingPage() {
               <motion.div variants={fadeUp} className="mb-3 inline-flex rounded-full border px-3 py-1 text-[12px] font-semibold" style={{ borderColor: "rgba(74,222,128,0.3)", color: "#4ade80", background: "rgba(74,222,128,0.08)" }}>
                 Early Access
               </motion.div>
-              <motion.h2 variants={fadeUp} className="text-[40px] font-extrabold leading-tight tracking-tight text-white sm:text-[52px]">
-                Turn your Tally data into<br />
+              <motion.h2 variants={fadeUp} className="text-[32px] font-extrabold leading-tight tracking-tight text-white sm:text-[52px]">
+                Turn your Tally data into
+                <br className="hidden sm:block" />
                 <span style={{ color: "#4ade80" }}>decisions that compound.</span>
               </motion.h2>
               <motion.p variants={fadeUp} className="mt-3 text-[15px]" style={{ color: "#8fa88f" }}>
-                Fixflow is available to Tally businesses across India.<br />
+                Fixflow is available to Tally businesses across India.
+                <br className="hidden sm:block" />
                 Connect in 2 minutes. Ask your first business question today.
               </motion.p>
             </div>
@@ -461,7 +470,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── GIANT WATERMARK SECTION ───────────────────────────────────────── */}
-      <section className="relative overflow-hidden" style={{ background: "#060e08", height: "clamp(260px, 30vw, 420px)" }}>
+      <section className="relative overflow-hidden" style={{ background: "#060e08", height: "clamp(300px, 32vw, 440px)" }}>
         {/* Giant watermark text — fills full height */}
         <motion.div
           initial={{ opacity: 0, y: 40 }}
@@ -505,16 +514,16 @@ export default function LandingPage() {
 
       {/* ── FOOTER ────────────────────────────────────────────────────────── */}
       <footer className="border-t py-14" style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(0,0,0,0.2)" }}>
-        <div className="mx-auto max-w-5xl px-6">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <motion.div
             initial="hidden"
             whileInView="show"
             viewport={{ once: true }}
             variants={stagger}
-            className="grid grid-cols-2 gap-8 sm:grid-cols-5"
+            className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-5"
           >
             {/* Brand col */}
-            <motion.div variants={fadeUp} className="col-span-2 sm:col-span-1">
+            <motion.div variants={fadeUp} className="lg:col-span-2">
               <div className="flex items-center gap-2 mb-3">
                 <div style={{ color: "#4ade80" }}><FixflowMark size={22} /></div>
                 <span className="text-[14px] font-bold text-white">Fixflow</span>
@@ -573,7 +582,7 @@ export default function LandingPage() {
             ))}
           </motion.div>
 
-          <div className="mt-10 border-t pt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-[12px]" style={{ borderColor: "rgba(255,255,255,0.06)", color: "#4a6a4a" }}>
+          <div className="mt-10 flex flex-col gap-2 border-t pt-6 text-[12px] sm:flex-row sm:items-center sm:justify-between" style={{ borderColor: "rgba(255,255,255,0.06)", color: "#4a6a4a" }}>
             <span>© 2026 Fixflow Technologies Pvt Ltd. AI Business Analyst for Tally SMEs.</span>
             <div className="flex items-center gap-4">
               <Link href="/privacy" className="transition hover:text-white">Privacy Policy</Link>
