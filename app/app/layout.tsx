@@ -36,7 +36,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           }}
         />
         <div className="relative w-full max-w-2xl rounded-3xl border border-white/15 bg-white/[0.06] p-8 text-center shadow-2xl backdrop-blur-xl sm:p-12">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-300">Premium Access</p>
           <h1 className="mt-5 text-3xl font-semibold leading-tight text-white sm:text-4xl">
             This experience is available on desktop and laptop only
           </h1>
