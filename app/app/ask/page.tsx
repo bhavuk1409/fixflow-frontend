@@ -37,6 +37,9 @@ const SUGGESTIONS = [
   { icon: Lightbulb, label: "Profit drop reason?", query: "Why did my profit drop last month?" },
 ];
 
+const TITLE_LOADING_PLACEHOLDER = "__TITLE_LOADING__";
+const isTempThreadId = (id: string | null | undefined) => Boolean(id && id.startsWith("temp-thread-"));
+
 function MessageBubble({ msg }: { msg: ChatMessage }) {
   const isUser = msg.role === "user";
   return (
@@ -76,6 +79,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
 function ThreadSidebar({
   threads,
   activeId,
+  titleLoadingIds,
   onSelect,
   onDelete,
   onNew,
@@ -83,6 +87,7 @@ function ThreadSidebar({
 }: {
   threads: ChatThread[];
   activeId: string | null;
+  titleLoadingIds: string[];
   onSelect: (t: ChatThread) => void;
   onDelete: (t: ChatThread) => void;
   onNew: () => void;
@@ -108,22 +113,34 @@ function ThreadSidebar({
           <p className="px-3 py-8 text-center text-xs text-muted-foreground">No saved conversations yet.</p>
         ) : (
           <ul className="flex flex-col gap-0.5">
-            {threads.map((t) => (
-              <li key={t.id}>
-                <div className={cn(
-                  "group flex items-start justify-between rounded-lg px-3 py-2.5 text-sm transition",
-                  activeId === t.id ? "bg-primary/15 text-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-                )}>
-                  <button onClick={() => onSelect(t)} className="flex-1 text-left">
-                    <p className="line-clamp-2 text-xs font-medium leading-snug">{t.title}</p>
-                    <p className="mt-0.5 text-2xs text-muted-foreground/60">{new Date(t.updated_at).toLocaleDateString()}</p>
-                  </button>
-                  <button onClick={() => onDelete(t)} className="ml-2 mt-0.5 flex-shrink-0 rounded p-1 text-muted-foreground/40 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100">
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </li>
-            ))}
+            {threads.map((t) => {
+              const titleLoading = titleLoadingIds.includes(t.id) || t.title === TITLE_LOADING_PLACEHOLDER;
+              return (
+                <li key={t.id}>
+                  <div className={cn(
+                    "group flex items-start justify-between rounded-lg px-3 py-2.5 text-sm transition",
+                    activeId === t.id ? "bg-primary/15 text-foreground" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  )}>
+                    <button onClick={() => onSelect(t)} className="flex-1 text-left">
+                      <p className="line-clamp-2 text-xs font-medium leading-snug">
+                        {titleLoading ? (
+                          <span className="inline-flex items-center gap-1.5 text-muted-foreground">
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                            Generating title...
+                          </span>
+                        ) : (
+                          t.title
+                        )}
+                      </p>
+                      <p className="mt-0.5 text-2xs text-muted-foreground/60">{new Date(t.updated_at).toLocaleDateString()}</p>
+                    </button>
+                    <button onClick={() => onDelete(t)} className="ml-2 mt-0.5 flex-shrink-0 rounded p-1 text-muted-foreground/40 opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
@@ -146,6 +163,7 @@ export default function AskPage() {
   const [streamingText, setStreamingText] = useState("");
   const [streamingTools, setStreamingTools] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [titleLoadingIds, setTitleLoadingIds] = useState<string[]>([]);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -177,14 +195,58 @@ export default function AskPage() {
 
   const saveThread = useCallback(async (msgs: ChatMessage[]) => {
     if (!tenantId || !companyId || msgs.length === 0) return;
+    const currentThreadId = activeThreadId;
+    const persistedThreadId = currentThreadId && !isTempThreadId(currentThreadId) ? currentThreadId : undefined;
+    const optimisticId = currentThreadId ?? `temp-thread-${Date.now()}`;
+    const nowIso = new Date().toISOString();
+
+    setTitleLoadingIds((prev) => (prev.includes(optimisticId) ? prev : [...prev, optimisticId]));
+    if (currentThreadId) {
+      setThreads((prev) =>
+        prev.map((t) =>
+          t.id === currentThreadId
+            ? {
+                ...t,
+                title: TITLE_LOADING_PLACEHOLDER,
+                updated_at: nowIso,
+                messages: msgs,
+              }
+            : t,
+        ),
+      );
+    } else {
+      setActiveThreadId(optimisticId);
+      setThreads((prev) => [
+        {
+          id: optimisticId,
+          tenant_id: tenantId,
+          company_id: companyId,
+          title: TITLE_LOADING_PLACEHOLDER,
+          created_at: nowIso,
+          updated_at: nowIso,
+          messages: msgs,
+        },
+        ...prev.filter((t) => t.id !== optimisticId),
+      ]);
+    }
+
     setSaving(true);
     try {
-      const res = await api.chat.threads.save(tenantId, companyId, msgs, activeThreadId ?? undefined);
-      setActiveThreadId(res.data.id);
-      if (showSidebar) void loadThreads();
+      const res = await api.chat.threads.save(tenantId, companyId, msgs, persistedThreadId);
+      const saved = res.data;
+      setActiveThreadId(saved.id);
+      setThreads((prev) => {
+        const filtered = prev.filter((t) => t.id !== optimisticId && t.id !== saved.id);
+        return [saved, ...filtered];
+      });
     } catch {
-      // non-fatal
+      if (!persistedThreadId) {
+        setThreads((prev) => prev.filter((t) => t.id !== optimisticId));
+        setActiveThreadId(null);
+      }
+      if (showSidebar) void loadThreads();
     } finally {
+      setTitleLoadingIds((prev) => prev.filter((id) => id !== optimisticId));
       setSaving(false);
     }
   }, [api, tenantId, companyId, activeThreadId, showSidebar, loadThreads]);
@@ -261,8 +323,11 @@ export default function AskPage() {
 
   const handleDeleteThread = async (thread: ChatThread) => {
     try {
-      await api.chat.threads.delete(tenantId, companyId, thread.id);
+      if (!isTempThreadId(thread.id)) {
+        await api.chat.threads.delete(tenantId, companyId, thread.id);
+      }
       setThreads((prev) => prev.filter((t) => t.id !== thread.id));
+      setTitleLoadingIds((prev) => prev.filter((id) => id !== thread.id));
       if (activeThreadId === thread.id) {
         setMessages([]);
         setActiveThreadId(null);
@@ -276,8 +341,11 @@ export default function AskPage() {
   const handleClearCurrent = async () => {
     if (activeThreadId) {
       try {
-        await api.chat.threads.delete(tenantId, companyId, activeThreadId);
+        if (!isTempThreadId(activeThreadId)) {
+          await api.chat.threads.delete(tenantId, companyId, activeThreadId);
+        }
         setThreads((prev) => prev.filter((t) => t.id !== activeThreadId));
+        setTitleLoadingIds((prev) => prev.filter((id) => id !== activeThreadId));
       } catch {
         // ignore
       }
@@ -306,6 +374,7 @@ export default function AskPage() {
             <ThreadSidebar
               threads={threads}
               activeId={activeThreadId}
+              titleLoadingIds={titleLoadingIds}
               onSelect={(thread) => {
                 setActiveThreadId(thread.id);
                 setMessages(thread.messages.map((m) => ({ role: m.role, content: m.content, tool_calls_made: m.tool_calls_made })));
