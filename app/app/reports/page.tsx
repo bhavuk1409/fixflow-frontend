@@ -72,7 +72,8 @@ function StatusBadge({ status }: { status: Report["status"] }) {
 
 // ── Report type icon chip ─────────────────────────────────────────────────────
 function ReportTypeChip({ type }: { type: string }) {
-  const cfg = REPORT_TYPES.find((r) => r.id === type) ?? REPORT_TYPES[0];
+  const normalizedType = (type || "weekly").toLowerCase();
+  const cfg = REPORT_TYPES.find((r) => r.id === normalizedType) ?? REPORT_TYPES[0];
   const Icon = cfg.icon;
   return (
     <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-secondary ring-1 ring-border">
@@ -353,12 +354,18 @@ export default function ReportsPage() {
                     transition={{ delay: i * 0.03 }}
                     className="group grid grid-cols-1 gap-3 px-5 py-4 transition-colors hover:bg-white/[0.02] sm:grid-cols-[1fr_140px_140px_auto] sm:items-center"
                   >
+                    {(() => {
+                      const normalizedType = (report.report_type || "weekly").toLowerCase();
+                      const typeCfg = REPORT_TYPES.find((r) => r.id === normalizedType) ?? REPORT_TYPES[0];
+                      const reportLabel = typeCfg.label;
+                      return (
+                        <>
                     {/* Report name + date */}
                     <div className="flex items-center gap-3">
                       <ReportTypeChip type={report.report_type} />
                       <div className="min-w-0">
                         <p className="text-sm font-semibold capitalize text-foreground truncate">
-                          {report.report_type === "pnl" ? "Profit & Loss" : `${report.report_type} Report`}
+                          {reportLabel}
                         </p>
                         {report.email_sent_at && (
                           <span className="inline-flex items-center gap-1 text-[11px] text-emerald-400 mt-0.5">
@@ -427,7 +434,7 @@ export default function ReportsPage() {
                       {report.status === "done" && !report.has_pdf && (
                         <button
                           onClick={() => generate.mutate({
-                            reportType: report.report_type,
+                            reportType: normalizedType,
                             from: report.period_from,
                             to: report.period_to,
                           })}
@@ -477,6 +484,9 @@ export default function ReportsPage() {
                         )}
                       </button>
                     </div>
+                        </>
+                      );
+                    })()}
                   </motion.div>
                 ))}
               </AnimatePresence>

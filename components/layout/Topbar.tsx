@@ -222,7 +222,9 @@ export function Topbar({ title }: { title?: string }) {
               className="relative rounded-full border border-border bg-card p-2 text-muted-foreground transition hover:bg-secondary hover:text-foreground"
             >
               <Bell className="h-3.5 w-3.5" />
-              {hasUnread && <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />}
+              {hasUnread && notifications.length > 0 && (
+                <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary" />
+              )}
             </button>
 
             <AnimatePresence>

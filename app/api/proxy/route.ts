@@ -18,26 +18,34 @@ async function proxy(req: NextRequest) {
     const clerkToken = await getToken();
     const incomingAuth = req.headers.get('authorization');
 
-    const headers: Record<string, string> = {};
+    const upstreamHeaders: Record<string, string> = {};
     if (incomingAuth) {
-      headers.Authorization = incomingAuth;
+      upstreamHeaders.Authorization = incomingAuth;
     } else if (clerkToken) {
-      headers.Authorization = `Bearer ${clerkToken}`;
+      upstreamHeaders.Authorization = `Bearer ${clerkToken}`;
     }
 
     const init: RequestInit = {
       method: req.method,
-      headers,
+      headers: upstreamHeaders,
     };
 
     if (req.method !== 'GET' && req.method !== 'HEAD') {
       const body = await req.text();
       init.body = body;
-      headers['Content-Type'] = req.headers.get('content-type') || 'application/json';
+      upstreamHeaders['Content-Type'] = req.headers.get('content-type') || 'application/json';
     }
 
     const res = await fetch(target, init);
-    const contentType = res.headers.get('content-type') || 'application/json';
+    const contentType = res.headers.get('content-type') || '';
+    const headers = new Headers();
+    const contentDisposition = res.headers.get('content-disposition');
+    const cacheControl = res.headers.get('cache-control');
+    const location = res.headers.get('location');
+    if (contentType) headers.set('Content-Type', contentType);
+    if (contentDisposition) headers.set('Content-Disposition', contentDisposition);
+    if (cacheControl) headers.set('Cache-Control', cacheControl);
+    if (location) headers.set('Location', location);
 
     // Preserve streaming for SSE chat responses.
     if (contentType.includes('text/event-stream')) {
@@ -52,10 +60,15 @@ async function proxy(req: NextRequest) {
       });
     }
 
-    const data = await res.text();
-    return new NextResponse(data, {
+    // 204/205/304 and HEAD responses must not carry a response body.
+    if (req.method === 'HEAD' || res.status === 204 || res.status === 205 || res.status === 304) {
+      return new NextResponse(null, { status: res.status, headers });
+    }
+
+    // Stream backend response through as-is (works for JSON, text, and binary/PDF).
+    return new NextResponse(res.body, {
       status: res.status,
-      headers: { 'Content-Type': contentType },
+      headers,
     });
   } catch (err) {
     console.error('Proxy error:', err);
