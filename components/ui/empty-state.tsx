@@ -32,27 +32,26 @@ export function EmptyState({
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.3 }}
       className={cn(
-        "flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-border bg-secondary/30 text-center",
-        variant === "default" ? "gap-4 py-20 px-8" : "gap-3 py-12 px-6",
+        "flex flex-col items-center justify-center rounded-[22px] border-2 border-dashed border-border/70 bg-background text-center",
+        variant === "default" ? "gap-5 px-8 py-24" : "gap-3 px-6 py-12",
         className,
       )}
     >
       {/* Icon */}
       <div className="relative">
-        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-          <Icon className="h-7 w-7 text-primary" />
+        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
+          <Icon className="h-7 w-7 text-primary" strokeWidth={2.1} />
         </div>
-        {/* Decoration rings */}
-        <div className="pointer-events-none absolute -inset-2 rounded-3xl border border-primary/10" />
-        <div className="pointer-events-none absolute -inset-4 rounded-[28px] border border-primary/5" />
+        <div className="pointer-events-none absolute -inset-2 rounded-[20px] border border-primary/15" />
+        <div className="pointer-events-none absolute -inset-4 rounded-[24px] border border-primary/10" />
       </div>
 
       {/* Text */}
-      <div className="max-w-sm">
-        <h3 className={cn("font-semibold text-foreground", variant === "default" ? "text-base" : "text-sm")}>
+      <div className="max-w-[430px]">
+        <h3 className={cn("font-semibold text-foreground", variant === "default" ? "text-2xl leading-snug" : "text-sm")}>
           {title}
         </h3>
-        <p className={cn("mt-1 text-muted-foreground", variant === "default" ? "text-sm" : "text-xs")}>
+        <p className={cn("mt-2 text-muted-foreground", variant === "default" ? "text-lg leading-relaxed" : "text-xs")}>
           {description}
         </p>
       </div>
@@ -62,7 +61,7 @@ export function EmptyState({
         action.href ? (
           <Link
             href={action.href}
-            className="group inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow-primary transition hover:opacity-90 active:scale-95"
+            className="group mt-1 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-glow-primary transition hover:opacity-90 active:scale-95"
           >
             {action.label}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -70,7 +69,7 @@ export function EmptyState({
         ) : (
           <button
             onClick={action.onClick}
-            className="group inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-glow-primary transition hover:opacity-90 active:scale-95"
+            className="group mt-1 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-glow-primary transition hover:opacity-90 active:scale-95"
           >
             {action.label}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

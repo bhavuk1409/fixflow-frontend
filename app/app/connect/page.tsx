@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Copy, Check, RefreshCw, Monitor, Apple, AlertCircle, Info,
-  ExternalLink, Zap, CheckCircle2, Clock, Download, Wifi, WifiOff,
+  ExternalLink, Zap, CheckCircle2, Clock, Download, Wifi, WifiOff, ChevronDown,
   PartyPopper, Building2, Unplug, ShieldAlert,
 } from "lucide-react";
 import { useAppState } from "@/lib/store";
@@ -18,10 +18,12 @@ import type { Company } from "@/lib/api";
 // ── Disconnect confirmation modal ──────────────────────────────────────────
 function DisconnectModal({
   company,
+  loading,
   onConfirm,
   onCancel,
 }: {
   company: Company;
+  loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -93,16 +95,17 @@ function DisconnectModal({
             <button
               type="button"
               onClick={onCancel}
+              disabled={loading}
               className="flex-1 rounded-xl border border-border bg-secondary px-4 py-2.5 text-sm font-medium text-foreground transition hover:bg-secondary/80"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={!matches}
+              disabled={!matches || !!loading}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-500 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
             >
-              <Unplug className="h-3.5 w-3.5" /> Disconnect
+              <Unplug className="h-3.5 w-3.5" /> {loading ? "Disconnecting…" : "Disconnect"}
             </button>
           </div>
         </form>
@@ -242,7 +245,10 @@ export default function ConnectPage() {
   const [codeExpired, setCodeExpired] = useState(false);
   const [paired, setPaired] = useState(false);
   const [syncedCompany, setSyncedCompany] = useState<Company | null>(null);
+  const [connectedCompanies, setConnectedCompanies] = useState<Company[]>([]);
+  const [showCompanyPicker, setShowCompanyPicker] = useState(false);
   const [showDisconnectModal, setShowDisconnectModal] = useState(false);
+  const companyPickerRef = useRef<HTMLDivElement | null>(null);
   const pairPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const syncPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const connectorPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -252,26 +258,62 @@ export default function ConnectPage() {
   const connectorPollErrorShownRef = useRef(false);
   const syncPollErrorShownRef = useRef(false);
 
-  // Disconnect: clear state and localStorage
+  const disconnect = useMutation({
+    mutationFn: async (company: Company) => {
+      const res = await api.companies.delete(tenantId, company.id);
+      const remainingFromDelete = Array.isArray(res.data?.remaining_companies)
+        ? (res.data.remaining_companies as Company[])
+        : null;
+      const remaining = remainingFromDelete ?? (
+        await api.companies.list(tenantId).then((r) => (r.data.companies ?? []) as Company[])
+      );
+      return { removed: company, companies: remaining };
+    },
+    onSuccess: ({ removed, companies }) => {
+      setShowDisconnectModal(false);
+      setConnectedCompanies(companies);
+
+      if (companies.length === 0) {
+        setSyncedCompany(null);
+        setPaired(false);
+        setPairingData(null);
+        setCodeExpired(false);
+        setCompanyId("");
+        initialCompanyIdsRef.current = null;
+        slowSyncHintShownRef.current = false;
+        connectorPollErrorShownRef.current = false;
+        syncPollErrorShownRef.current = false;
+        toast.success(`${removed.name} disconnected and deleted.`);
+        return;
+      }
+
+      const currentlySelectedStillExists = syncedCompany && companies.some((c) => c.id === syncedCompany.id);
+      const fallback = currentlySelectedStillExists
+        ? syncedCompany
+        : (mostRecentCompany(companies) ?? companies[0]);
+      setSyncedCompany(fallback);
+      setPaired(true);
+      setCompanyId(fallback.id);
+      toast.success(`${removed.name} disconnected and deleted.`);
+    },
+    onError: (e: Error) => {
+      toast.error(String(e.message || "Unable to disconnect company."));
+    },
+  });
+
+  // Disconnect selected company from DB + local app state
   const handleDisconnectConfirmed = useCallback(() => {
-    setShowDisconnectModal(false);
-    setSyncedCompany(null);
-    setPaired(false);
-    setPairingData(null);
-    setCodeExpired(false);
-    setCompanyId("");
-    initialCompanyIdsRef.current = null;
-    slowSyncHintShownRef.current = false;
-    connectorPollErrorShownRef.current = false;
-    syncPollErrorShownRef.current = false;
-    toast.success("Tally disconnected successfully.");
-  }, [setCompanyId]);
+    if (!syncedCompany) return;
+    disconnect.mutate(syncedCompany);
+  }, [disconnect, syncedCompany]);
 
   // ── On mount: if we already have a companyId saved, restore connected state ──
   useEffect(() => {
-    if (!storedCompanyId) return;
     api.companies.list(tenantId).then((res) => {
-      const match = res.data.companies.find((c: Company) => c.id === storedCompanyId);
+      const companies: Company[] = res.data.companies ?? [];
+      setConnectedCompanies(companies);
+      if (!storedCompanyId) return;
+      const match = companies.find((c: Company) => c.id === storedCompanyId);
       if (match) {
         setSyncedCompany(match);
         setPaired(true);
@@ -358,6 +400,10 @@ export default function ConnectPage() {
       clearInterval(syncPollRef.current);
       syncPollRef.current = null;
     }
+    setConnectedCompanies((prev) => {
+      const exists = prev.some((c) => c.id === company.id);
+      return exists ? prev : [company, ...prev];
+    });
     setSyncedCompany(company);
     setCompanyId(company.id);
     toast.success(`${company.name} connected and synced!`);
@@ -369,6 +415,7 @@ export default function ConnectPage() {
       try {
         const res = await api.companies.list(tenantId);
         const companies: Company[] = res.data.companies ?? [];
+        setConnectedCompanies(companies);
         const initialCompanyIds = initialCompanyIdsRef.current;
         const freshnessFloor = codeGeneratedAt - CONNECTOR_CLOCK_SKEW_TOLERANCE_MS;
 
@@ -445,6 +492,17 @@ export default function ConnectPage() {
     };
   }, []);
 
+  useEffect(() => {
+    const onMouseDown = (event: MouseEvent) => {
+      if (!companyPickerRef.current) return;
+      if (!companyPickerRef.current.contains(event.target as Node)) {
+        setShowCompanyPicker(false);
+      }
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
   const generate = useMutation({
     mutationFn: async () => {
       const generatedAt = Date.now();
@@ -468,6 +526,7 @@ export default function ConnectPage() {
       setCodeExpired(false);
       setPaired(false);
       setSyncedCompany(null);
+      setConnectedCompanies((prev) => prev);
       toast.success("Pairing code ready!");
       startPairPolling(pairData.code);
     },
@@ -497,6 +556,7 @@ export default function ConnectPage() {
         {showDisconnectModal && syncedCompany && (
           <DisconnectModal
             company={syncedCompany}
+            loading={disconnect.isPending}
             onConfirm={handleDisconnectConfirmed}
             onCancel={() => setShowDisconnectModal(false)}
           />
@@ -608,6 +668,57 @@ export default function ConnectPage() {
                     </div>
                   </div>
 
+                  {connectedCompanies.length > 1 && (
+                    <div className="w-full rounded-2xl border border-border bg-card p-4 shadow-[0_8px_24px_rgba(15,23,42,0.06)]">
+                      <p className="mb-3 text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+                        Connected Companies
+                      </p>
+                      <div className="relative" ref={companyPickerRef}>
+                        <button
+                          type="button"
+                          onClick={() => setShowCompanyPicker((v) => !v)}
+                          className="inline-flex h-11 w-full items-center justify-between gap-2 rounded-xl border border-border bg-background px-3.5 text-left text-sm font-semibold text-foreground outline-none transition hover:border-primary/35 focus:border-primary/45 focus:ring-2 focus:ring-primary/15"
+                          aria-haspopup="listbox"
+                          aria-expanded={showCompanyPicker}
+                        >
+                          <span className="truncate">{syncedCompany.name}</span>
+                          <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showCompanyPicker && "rotate-180")} />
+                        </button>
+
+                        {showCompanyPicker && (
+                          <div className="absolute left-0 right-0 z-20 mt-2 overflow-hidden rounded-xl border border-border bg-card shadow-[0_16px_40px_rgba(2,6,23,0.18)]">
+                            <div className="max-h-56 overflow-y-auto p-1.5">
+                              {connectedCompanies.map((c) => {
+                                const active = c.id === syncedCompany.id;
+                                return (
+                                  <button
+                                    key={c.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSyncedCompany(c);
+                                      setCompanyId(c.id);
+                                      setShowCompanyPicker(false);
+                                    }}
+                                    className={cn(
+                                      "flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition",
+                                      active ? "bg-primary/12 text-foreground" : "text-foreground hover:bg-secondary",
+                                    )}
+                                  >
+                                    <span className="truncate">{c.name}</span>
+                                    {active && <Check className="h-4 w-4 text-primary" />}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-2.5 text-xs text-muted-foreground">
+                        Select a company and use Disconnect below.
+                      </p>
+                    </div>
+                  )}
+
                   <p className="text-xs text-muted-foreground">
                     Head to the{" "}
                     <a href="/app/dashboard" className="font-semibold text-primary underline underline-offset-2">dashboard</a>
@@ -627,9 +738,10 @@ export default function ConnectPage() {
                   {/* Disconnect button */}
                   <button
                     onClick={() => setShowDisconnectModal(true)}
+                    disabled={disconnect.isPending}
                     className="flex items-center gap-1.5 text-xs font-medium text-red-500/80 transition hover:text-red-500"
                   >
-                    <Unplug className="h-3.5 w-3.5" /> Disconnect Tally
+                    <Unplug className="h-3.5 w-3.5" /> Disconnect selected company
                   </button>
                 </motion.div>
 
@@ -774,12 +886,12 @@ export default function ConnectPage() {
               <div className="flex flex-col gap-2.5">
                 <button
                   onClick={() => WIN_URL ? triggerDownload(WIN_URL, "FixflowConnector.exe") : toast.info("Windows installer coming soon", { duration: 4000 })}
-                  className="flex w-full items-center gap-2.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground transition hover:opacity-90 active:scale-95"
+                  className="flex w-full items-center gap-2.5 rounded-xl border border-border bg-secondary px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary/80 active:scale-95"
                 >
                   <Monitor className="h-4 w-4" />
                   <span className="flex-1 text-left">Windows (.exe)</span>
                   {WIN_URL ? <ExternalLink className="h-3.5 w-3.5 opacity-70" /> : (
-                    <span className="rounded-full bg-white/20 px-2 py-0.5 text-2xs">Soon</span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-2xs text-muted-foreground">Soon</span>
                   )}
                 </button>
 
@@ -789,7 +901,7 @@ export default function ConnectPage() {
                 >
                   <Apple className="h-4 w-4" />
                   <span className="flex-1 text-left">macOS (.dmg)</span>
-                  {MAC_URL ? <ExternalLink className="h-3.5 w-3.5 opacity-50" /> : (
+                  {MAC_URL ? <ExternalLink className="h-3.5 w-3.5 opacity-60" /> : (
                     <span className="rounded-full bg-muted px-2 py-0.5 text-2xs text-muted-foreground">Soon</span>
                   )}
                 </button>
@@ -836,12 +948,19 @@ export default function ConnectPage() {
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.38 }}
-              className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 p-3.5 dark:border-amber-900/50 dark:bg-amber-500/8"
+              className="rounded-2xl border border-primary/25 bg-primary/[0.07] p-4 shadow-[0_10px_24px_rgba(37,99,235,0.08)]"
             >
-              <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600 dark:text-amber-400" />
-              <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
-                Install the connector on the same machine as Tally. It syncs data in the background — Tally keeps running normally.
-              </p>
+              <div className="flex items-start gap-3">
+                <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border border-primary/30 bg-primary/10">
+                  <Info className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Install on the same machine as Tally</p>
+                  <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+                    The connector syncs data in the background while Tally keeps running normally.
+                  </p>
+                </div>
+              </div>
             </motion.div>
           </div>
         </div>

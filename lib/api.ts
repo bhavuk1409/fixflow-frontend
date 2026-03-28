@@ -190,6 +190,8 @@ export function buildApi() {
     companies: {
       list: async (tenantId: string) =>
         apiFetch(`/tenants/${tenantId}/companies`, { method: "GET" }),
+      delete: async (tenantId: string, companyId: string) =>
+        apiFetch(`/tenants/${tenantId}/companies/${companyId}`, { method: "DELETE" }),
     },
 
     insights: {

@@ -30,6 +30,9 @@ export function Topbar({ title }: { title?: string }) {
   const api = useApi();
 
   const [showPicker, setShowPicker] = useState(false);
+  const [showCustomRange, setShowCustomRange] = useState(false);
+  const [customFrom, setCustomFrom] = useState("");
+  const [customTo, setCustomTo] = useState("");
   const [showNotifications, setShowNotifications] = useState(false);
   const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
   const [hasUnread, setHasUnread] = useState(true);
@@ -39,6 +42,12 @@ export function Topbar({ title }: { title?: string }) {
 
   const from = dateRange.from instanceof Date ? dateRange.from : new Date(dateRange.from);
   const to = dateRange.to instanceof Date ? dateRange.to : new Date(dateRange.to);
+  const isCustomActive = !PRESETS.some((preset) => {
+    const nextTo = new Date();
+    const nextFrom = new Date();
+    nextFrom.setDate(nextTo.getDate() - preset.days);
+    return format(from, "yyyy-MM-dd") === format(nextFrom, "yyyy-MM-dd");
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +98,17 @@ export function Topbar({ title }: { title?: string }) {
         <div className="flex items-center gap-2">
           <div className="relative">
             <button
-              onClick={() => setShowPicker((p) => !p)}
+              onClick={() => {
+                setShowPicker((p) => {
+                  const next = !p;
+                  if (next) {
+                    setShowCustomRange(false);
+                    setCustomFrom(format(from, "yyyy-MM-dd"));
+                    setCustomTo(format(to, "yyyy-MM-dd"));
+                  }
+                  return next;
+                });
+              }}
               className={cn(
                 "inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition",
                 "border-border bg-card text-muted-foreground hover:bg-secondary hover:text-foreground",
@@ -108,7 +127,7 @@ export function Topbar({ title }: { title?: string }) {
                   initial={{ opacity: 0, y: 6, scale: 0.98 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.98 }}
-                  className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-border bg-card shadow-card-hover dark:shadow-card-dark-hover"
+                  className="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-border bg-card shadow-card-hover dark:shadow-card-dark-hover"
                 >
                   <div className="p-1.5">
                     {PRESETS.map((preset) => {
@@ -121,6 +140,7 @@ export function Topbar({ title }: { title?: string }) {
                           key={preset.label}
                           onClick={() => {
                             setDateRange({ from: nextFrom, to: nextTo });
+                            setShowCustomRange(false);
                             setShowPicker(false);
                           }}
                           className={cn(
@@ -132,6 +152,61 @@ export function Topbar({ title }: { title?: string }) {
                         </button>
                       );
                     })}
+
+                    <button
+                      onClick={() => {
+                        setShowCustomRange((v) => !v);
+                        setCustomFrom(format(from, "yyyy-MM-dd"));
+                        setCustomTo(format(to, "yyyy-MM-dd"));
+                      }}
+                      className={cn(
+                        "mt-1 w-full rounded-lg px-3 py-2 text-left text-xs font-medium transition",
+                        isCustomActive || showCustomRange
+                          ? "bg-primary/15 text-primary"
+                          : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+                      )}
+                    >
+                      Custom
+                    </button>
+
+                    {showCustomRange && (
+                      <div className="mt-2 space-y-2 rounded-lg border border-border bg-secondary/40 p-2.5">
+                        <div className="space-y-1">
+                          <label className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">From</label>
+                          <input
+                            type="date"
+                            value={customFrom}
+                            max={customTo || undefined}
+                            onChange={(e) => setCustomFrom(e.target.value)}
+                            className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition focus:border-primary/40"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-2xs font-medium uppercase tracking-wide text-muted-foreground">To</label>
+                          <input
+                            type="date"
+                            value={customTo}
+                            min={customFrom || undefined}
+                            onChange={(e) => setCustomTo(e.target.value)}
+                            className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-xs text-foreground outline-none transition focus:border-primary/40"
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            if (!customFrom || !customTo) return;
+                            const nextFrom = new Date(`${customFrom}T12:00:00`);
+                            const nextTo = new Date(`${customTo}T12:00:00`);
+                            setDateRange({ from: nextFrom, to: nextTo });
+                            setShowCustomRange(false);
+                            setShowPicker(false);
+                          }}
+                          disabled={!customFrom || !customTo}
+                          className="mt-1 w-full rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          Apply custom range
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               )}

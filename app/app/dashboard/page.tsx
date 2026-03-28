@@ -3,10 +3,11 @@
 import { useQuery } from "@tanstack/react-query";
 import {
   TrendingUp, TrendingDown, Wallet, ArrowUpRight, ArrowDownLeft,
-  PlugZap, BarChart3, RefreshCw, Users, FileText, CreditCard, FileSpreadsheet,
+  PlugZap, BarChart3, RefreshCw, Users, FileText, CreditCard, FileSpreadsheet, Building2, ChevronDown, Check, Info,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useAppState } from "@/lib/store";
 import { useApi } from "@/lib/useApi";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -125,41 +126,65 @@ function CashflowPremiumLogo({ className }: { className?: string }) {
 }
 
 export default function DashboardPage() {
-  const { tenantId, companyId, fromIso, toIso, todayIso } = useAppState();
+  const { tenantId, companyId, setCompanyId, fromIso, toIso, todayIso } = useAppState();
   const api = useApi();
   const router = useRouter();
+  const [showCompanyMenu, setShowCompanyMenu] = useState(false);
+  const companyMenuRef = useRef<HTMLDivElement | null>(null);
 
-  const enabled = !!companyId;
+  const companies = useQuery({
+    queryKey: ["companies", tenantId],
+    queryFn: () => api.companies.list(tenantId).then((r) => r.data),
+    enabled: !!tenantId,
+  });
+
+  const companyList = useMemo(
+    () => (companies.data?.companies ?? []) as Array<{ id: string; name: string }>,
+    [companies.data?.companies],
+  );
+  const activeCompany = companyList.find((c: { id: string; name: string }) => c.id === companyId);
+  const selectedCompanyId = activeCompany?.id ?? "";
+  const enabled = !!selectedCompanyId;
+
+  useEffect(() => {
+    if (!companies.isSuccess) return;
+    if (!companyId) return;
+    const exists = companyList.some((c: { id: string; name: string }) => c.id === companyId);
+    if (!exists) {
+      setCompanyId("");
+    }
+  }, [companies.isSuccess, companyId, companyList, setCompanyId]);
 
   const pnl = useQuery({
-    queryKey: ["pnl", tenantId, companyId, fromIso, toIso],
-    queryFn: () => api.insights.pnl(tenantId, companyId, fromIso, toIso).then((r) => r.data),
+    queryKey: ["pnl", tenantId, selectedCompanyId, fromIso, toIso],
+    queryFn: () => api.insights.pnl(tenantId, selectedCompanyId, fromIso, toIso).then((r) => r.data),
     enabled,
   });
 
   const cashflow = useQuery({
-    queryKey: ["cashflow", tenantId, companyId, fromIso, toIso],
+    queryKey: ["cashflow", tenantId, selectedCompanyId, fromIso, toIso],
     queryFn: () =>
-      api.insights.cashflow(tenantId, companyId, fromIso, toIso).then((r) => r.data),
+      api.insights.cashflow(tenantId, selectedCompanyId, fromIso, toIso).then((r) => r.data),
     enabled,
   });
 
   const receivables = useQuery({
-    queryKey: ["receivables", tenantId, companyId, todayIso],
+    queryKey: ["receivables", tenantId, selectedCompanyId, todayIso],
     queryFn: () =>
-      api.insights.receivables(tenantId, companyId, todayIso, 8).then((r) => r.data),
+      api.insights.receivables(tenantId, selectedCompanyId, todayIso, 8).then((r) => r.data),
     enabled,
   });
 
   const payables = useQuery({
-    queryKey: ["payables", tenantId, companyId, todayIso],
+    queryKey: ["payables", tenantId, selectedCompanyId, todayIso],
     queryFn: () =>
-      api.insights.payables(tenantId, companyId, todayIso, 8).then((r) => r.data),
+      api.insights.payables(tenantId, selectedCompanyId, todayIso, 8).then((r) => r.data),
     enabled,
   });
 
   const hasNoData =
     (!enabled && !pnl.isLoading) ||
+    pnl.isError ||
     (enabled && pnl.isSuccess && !pnl.data?.total_income && !pnl.data?.cost_of_goods);
 
   // Show loading skeletons while enabled but data hasn't arrived yet
@@ -211,16 +236,96 @@ export default function DashboardPage() {
     }] : []),
   ] : undefined;
 
+  useEffect(() => {
+    const onMouseDown = (event: MouseEvent) => {
+      if (!companyMenuRef.current) return;
+      if (!companyMenuRef.current.contains(event.target as Node)) {
+        setShowCompanyMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    return () => document.removeEventListener("mousedown", onMouseDown);
+  }, []);
+
   return (
     <div className="flex flex-col">
       <Topbar title="Dashboard" />
 
-      <div className="mx-auto w-full max-w-[1320px] space-y-6 px-6 py-6">
-        <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 shadow-card">
-          <p className="text-sm font-semibold text-foreground">All features are free</p>
-          <p className="mt-0.5 text-xs text-muted-foreground">
-            Billing is disabled. You can use dashboard, reports, and AI CFO without a paid plan.
-          </p>
+      <div className="mx-auto w-full max-w-[1320px] space-y-4 px-6 py-5">
+        <div className="rounded-2xl border border-primary/20 bg-primary/[0.07] px-5 py-3 shadow-sm">
+          <div className="flex items-start gap-2.5">
+            <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
+            <div>
+              <p className="text-[13px] font-semibold leading-tight text-foreground">All features are free</p>
+              <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                Billing is disabled. You can use dashboard, reports, and AI CFO without a paid plan.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative overflow-visible rounded-2xl border border-border bg-card px-5 py-3.5 shadow-sm">
+          <div className="relative flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-primary/20 bg-primary/10">
+                  <Building2 className="h-3.5 w-3.5 text-primary" />
+                </div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Company</p>
+              </div>
+              <p className="mt-1 truncate text-xs text-muted-foreground">
+                {(companies.data?.companies ?? []).length} connected
+              </p>
+            </div>
+            <div className="relative z-10" ref={companyMenuRef}>
+              <button
+                type="button"
+                onClick={() => setShowCompanyMenu((v) => !v)}
+                className="inline-flex h-11 min-w-[330px] items-center justify-between gap-2 rounded-xl border border-border/80 bg-background px-4 text-sm font-semibold text-foreground outline-none transition hover:border-primary/35 focus:border-primary/45 focus:ring-2 focus:ring-primary/15"
+                aria-haspopup="listbox"
+                aria-expanded={showCompanyMenu}
+                aria-label="Switch company"
+              >
+                <span className="truncate">
+                  {activeCompany?.name || "No company available"}
+                </span>
+                <ChevronDown className={cn("h-4 w-4 text-muted-foreground transition-transform", showCompanyMenu && "rotate-180")} />
+              </button>
+
+              {showCompanyMenu && (
+                <div className="absolute right-0 z-20 mt-2 w-[330px] overflow-hidden rounded-xl border border-border bg-card shadow-[0_16px_40px_rgba(2,6,23,0.18)]">
+                  <div className="max-h-72 overflow-y-auto p-1.5">
+                    {companyList.length === 0 ? (
+                      <p className="px-3 py-2 text-xs text-muted-foreground">No company available</p>
+                    ) : (
+                      companyList.map((c: { id: string; name: string }) => {
+                        const active = c.id === companyId;
+                        return (
+                          <button
+                            key={c.id}
+                            type="button"
+                            onClick={() => {
+                              setCompanyId(c.id);
+                              setShowCompanyMenu(false);
+                            }}
+                            className={cn(
+                              "flex w-full items-center justify-between rounded-xl px-4 py-3 text-left text-sm transition",
+                              active
+                                ? "bg-primary/15 text-foreground"
+                                : "text-foreground hover:bg-secondary",
+                            )}
+                          >
+                            <span className="truncate">{c.name || c.id}</span>
+                            {active && <Check className="h-4 w-4 text-primary" />}
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* KPI Cards */}
