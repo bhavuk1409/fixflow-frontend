@@ -176,7 +176,7 @@ export default function BlogPage() {
             We share practical articles for operators and finance teams building with Tally and AI-enabled workflows.
           </p>
           <a
-            href="mailto:hello@fixflow.app?subject=Subscribe to Fixflow blog updates"
+            href="mailto:info@fixflowtally.com?subject=Subscribe to Fixflow blog updates"
             className="mt-6 inline-flex items-center gap-2 rounded-full px-7 py-3 text-sm font-bold text-black transition hover:opacity-90"
             style={{ background: "#4ade80" }}
           >

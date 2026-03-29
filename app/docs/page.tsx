@@ -489,8 +489,8 @@ export default function DocsPage() {
 
               <p className="mt-4 text-sm" style={{ color: softText }}>
                 Support contact:{" "}
-                <a className="underline" href="mailto:hello@fixflow.app" style={{ color: accent }}>
-                  hello@fixflow.app
+                <a className="underline" href="mailto:support@fixflowtally.com" style={{ color: accent }}>
+                  support@fixflowtally.com
                 </a>
               </p>
             </DocSection>

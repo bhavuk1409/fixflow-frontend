@@ -50,7 +50,7 @@ export default function TermsPage() {
             },
             {
               title: "3. Account Registration",
-              content: `You must create an account to use Fixflow. You are responsible for maintaining the confidentiality of your credentials. You agree to provide accurate, current, and complete information. You are responsible for all activity that occurs under your account. Notify us immediately at hello@fixflow.app if you suspect unauthorised access.`,
+              content: `You must create an account to use Fixflow. You are responsible for maintaining the confidentiality of your credentials. You agree to provide accurate, current, and complete information. You are responsible for all activity that occurs under your account. Notify us immediately at support@fixflowtally.com if you suspect unauthorised access.`,
             },
             {
               title: "4. Acceptable Use",
@@ -90,8 +90,8 @@ export default function TermsPage() {
           <motion.div variants={fadeUp} className="mt-12 rounded-2xl border p-6" style={{ borderColor: "rgba(74,222,128,0.15)", background: "rgba(74,222,128,0.04)" }}>
             <p className="text-[13px]" style={{ color: "#6b8a6b" }}>
               Questions about these terms?{" "}
-              <a href="mailto:hello@fixflow.app" className="font-semibold transition hover:text-white" style={{ color: "#4ade80" }}>
-                hello@fixflow.app
+              <a href="mailto:support@fixflowtally.com" className="font-semibold transition hover:text-white" style={{ color: "#4ade80" }}>
+                support@fixflowtally.com
               </a>
             </p>
           </motion.div>

@@ -58,7 +58,7 @@ export default function PrivacyPage() {
             },
             {
               title: "5. Data Retention",
-              content: `We retain your financial data for as long as your account is active. On account deletion, all data is purged within 30 days. You can request an export of your data at any time by writing to privacy@fixflow.app.`,
+              content: `We retain your financial data for as long as your account is active. On account deletion, all data is purged within 30 days. You can request an export of your data at any time by writing to support@fixflowtally.com.`,
             },
             {
               title: "6. Sharing & Disclosure",
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
             },
             {
               title: "8. Your Rights",
-              content: `Under the DPDP Act and applicable laws, you have the right to access, correct, and erase your personal data. You can export your data, withdraw consent, or delete your account at any time from Settings. For requests, email privacy@fixflow.app.`,
+              content: `Under the DPDP Act and applicable laws, you have the right to access, correct, and erase your personal data. You can export your data, withdraw consent, or delete your account at any time from Settings. For requests, email support@fixflowtally.com.`,
             },
             {
               title: "9. Cookies",
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
             },
             {
               title: "10. Contact Us",
-              content: `For privacy-related questions or requests, contact our Data Protection Officer at privacy@fixflow.app. For general queries, reach us at hello@fixflow.app.`,
+              content: `For privacy-related questions or requests, contact our Data Protection Officer at support@fixflowtally.com. For general queries, reach us at info@fixflowtally.com.`,
             },
           ].map((section) => (
             <motion.div key={section.title} variants={fadeUp} className="mb-8">
@@ -90,8 +90,8 @@ export default function PrivacyPage() {
           <motion.div variants={fadeUp} className="mt-12 rounded-2xl border p-6" style={{ borderColor: "rgba(74,222,128,0.15)", background: "rgba(74,222,128,0.04)" }}>
             <p className="text-[13px]" style={{ color: "#6b8a6b" }}>
               Questions about this policy?{" "}
-              <a href="mailto:privacy@fixflow.app" className="font-semibold transition hover:text-white" style={{ color: "#4ade80" }}>
-                privacy@fixflow.app
+              <a href="mailto:support@fixflowtally.com" className="font-semibold transition hover:text-white" style={{ color: "#4ade80" }}>
+                support@fixflowtally.com
               </a>
             </p>
           </motion.div>
