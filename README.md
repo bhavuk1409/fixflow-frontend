@@ -1,6 +1,6 @@
 # FixFlow - AI Business Analyst for Tally Users
 
-fixflowtally.com
+https://www.fixflowtally.com
 
 ## Overview
 
