@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useOrganization, useUser } from "@clerk/nextjs";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, XCircle } from "lucide-react";
+import { useTheme } from "next-themes";
 import { toast } from "sonner";
 
 import { getTenantId } from "@/lib/auth";
@@ -112,6 +113,7 @@ export default function PricingPage() {
   const api = useApi();
   const { isLoaded, isSignedIn, user } = useUser();
   const { organization } = useOrganization();
+  const { resolvedTheme } = useTheme();
 
   const tenantId = useMemo(
     () => getTenantId(organization?.id, user?.id),
@@ -141,6 +143,12 @@ export default function PricingPage() {
   const isGrowthActive = Boolean(
     settings.data?.plan_active && settings.data?.plan_id === "growth",
   );
+  const subscriptionStatus = (settings.data?.razorpay_subscription_status || "").toLowerCase();
+  const hasSubscriptionId = Boolean(settings.data?.razorpay_subscription_id);
+  const canCancelSubscription =
+    hasSubscriptionId &&
+    !["cancelled", "completed", "expired", "halted"].includes(subscriptionStatus);
+  const razorpayThemeColor = resolvedTheme === "light" ? "#2563eb" : "#3b82f6";
 
   const startGrowthSubscription = async () => {
     if (!isSignedIn) {
@@ -187,7 +195,7 @@ export default function PricingPage() {
           billing_cycle: "monthly",
         },
         theme: {
-          color: "#16a34a",
+          color: razorpayThemeColor,
         },
         method: {
           upi: false,
@@ -244,7 +252,7 @@ export default function PricingPage() {
       toast.error("Unable to resolve tenant.");
       return;
     }
-    if (!window.confirm("Cancel your Growth subscription immediately?")) {
+    if (!window.confirm("Unsubscribe from Growth now? This will stop recurring auto-pay.")) {
       return;
     }
 
@@ -263,8 +271,20 @@ export default function PricingPage() {
 
   if (!isLoaded || !isSignedIn) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0B0F14] text-[#E6EDF3]">
-        <div className="flex items-center gap-3 rounded-xl border border-[#232A34] bg-[#111620] px-5 py-3 text-sm">
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background text-foreground">
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 hidden dark:block"
+        >
+          <div
+            className="absolute left-[12%] top-[-14%] h-[420px] w-[420px] rounded-full opacity-[0.08]"
+            style={{
+              background: "radial-gradient(circle, #3B82F6 0%, transparent 70%)",
+              filter: "blur(78px)",
+            }}
+          />
+        </div>
+        <div className="relative z-10 flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-3 text-sm text-muted-foreground shadow-card dark:shadow-card-dark">
           <Loader2 className="h-4 w-4 animate-spin" />
           Loading billing...
         </div>
@@ -273,82 +293,108 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0F14] px-4 py-12 text-[#E6EDF3] sm:px-6">
-      <div className="mx-auto w-full max-w-2xl">
-        <div className="rounded-3xl border border-[#232A34] bg-[#111620] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.35)] sm:p-9">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[#4ade80]">
+    <div className="relative min-h-screen overflow-hidden bg-background px-4 py-12 text-foreground sm:px-6">
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+      >
+        <div
+          className="absolute inset-x-0 top-0 h-[380px] opacity-80 dark:hidden"
+          style={{
+            background: "radial-gradient(ellipse 75% 60% at 50% -10%, rgba(59,130,246,0.16), transparent 72%)",
+          }}
+        />
+        <div
+          className="absolute inset-x-0 top-0 hidden h-[420px] dark:block"
+          style={{
+            background: "radial-gradient(ellipse 80% 62% at 50% -12%, rgba(59,130,246,0.18), transparent 70%)",
+          }}
+        />
+      </div>
+
+      <div className="relative z-10 mx-auto w-full max-w-2xl">
+        <div className="rounded-3xl border border-border bg-card/95 p-7 shadow-card-hover backdrop-blur sm:p-9 dark:bg-card/90 dark:shadow-card-dark-hover">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">
             Billing
           </p>
-          <h1 className="mt-2 text-3xl font-bold text-white">Fixflow Growth</h1>
-          <p className="mt-2 text-sm text-[#9AA4B2]">
-            Unlock full limits with Growth at <span className="font-semibold text-white">₹299/month</span>.
+          <h1 className="mt-2 text-3xl font-bold text-foreground">Fixflow Growth</h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Unlock full limits with Growth at <span className="font-semibold text-foreground">₹299/month</span>.
           </p>
           {isTestMode && (
-            <p className="mt-2 text-xs text-amber-300">
+            <p className="mt-2 text-xs text-warning">
               You are using Razorpay test mode. Subscription mandates work only with test payment instruments.
             </p>
           )}
 
-          <div className="mt-6 rounded-2xl border border-[#253042] bg-[#0E141D] p-5">
+          <div className="mt-6 rounded-2xl border border-border bg-background/65 p-5">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-white">
+                <p className="text-sm font-semibold text-foreground">
                   {isGrowthActive ? "Growth is active" : "Starter is active"}
                 </p>
-                <p className="mt-1 text-xs text-[#9AA4B2]">
+                <p className="mt-1 text-xs text-muted-foreground">
                   {isGrowthActive
                     ? "You have paid limits for companies, AI CFO, and reports."
                     : "Starter includes 1 company, 5 AI CFO queries/month, and 2 reports/month."}
                 </p>
               </div>
               {isGrowthActive ? (
-                <span className="inline-flex items-center gap-1 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs font-medium text-emerald-300">
+                <span className="inline-flex items-center gap-1 rounded-full border border-primary/35 bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
                   <CheckCircle2 className="h-3.5 w-3.5" />
                   Active
                 </span>
               ) : (
-                <span className="inline-flex items-center gap-1 rounded-full border border-amber-400/30 bg-amber-400/10 px-2.5 py-1 text-xs font-medium text-amber-300">
+                <span className="inline-flex items-center gap-1 rounded-full border border-warning/35 bg-warning/10 px-2.5 py-1 text-xs font-medium text-warning">
                   <XCircle className="h-3.5 w-3.5" />
                   Starter
                 </span>
               )}
             </div>
 
-            <ul className="mt-4 space-y-2 text-sm text-[#C7D0DD]">
+            <ul className="mt-4 space-y-2 text-sm text-foreground">
               <li className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#4ade80]" />
+                <ShieldCheck className="h-4 w-4 text-primary" />
                 Up to 5 Tally companies
               </li>
               <li className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#4ade80]" />
+                <ShieldCheck className="h-4 w-4 text-primary" />
                 Unlimited AI CFO queries
               </li>
               <li className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-[#4ade80]" />
+                <ShieldCheck className="h-4 w-4 text-primary" />
                 Unlimited report generation + weekly automation
               </li>
             </ul>
 
             {settings.data?.razorpay_subscription_id && (
-              <p className="mt-4 text-xs text-[#9AA4B2]">
+              <p className="mt-4 text-xs text-muted-foreground">
                 Subscription ID:{" "}
-                <span className="font-mono text-[#D8DEE9]">
+                <span className="font-mono text-foreground">
                   {settings.data.razorpay_subscription_id}
                 </span>
               </p>
             )}
-            <p className="mt-2 text-xs text-[#9AA4B2]">
+            {settings.data?.razorpay_subscription_status && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Status:{" "}
+                <span className="font-medium capitalize text-foreground">
+                  {settings.data.razorpay_subscription_status}
+                </span>
+              </p>
+            )}
+            <p className="mt-2 text-xs text-muted-foreground">
               Offers appear only when a Razorpay subscription offer is linked (`offer_id`) for this plan.
             </p>
           </div>
 
           {settings.isLoading ? (
-            <div className="mt-6 flex items-center gap-2 text-sm text-[#9AA4B2]">
+            <div className="mt-6 flex items-center gap-2 text-sm text-muted-foreground">
               <Loader2 className="h-4 w-4 animate-spin" />
               Loading subscription status...
             </div>
           ) : settings.isError ? (
-            <p className="mt-6 text-sm text-red-300">
+            <p className="mt-6 text-sm text-destructive">
               {settings.error instanceof Error
                 ? settings.error.message
                 : "Unable to load billing settings. Please refresh and try again."}
@@ -360,7 +406,7 @@ export default function PricingPage() {
                   type="button"
                   onClick={startGrowthSubscription}
                   disabled={isCheckoutBusy || isVerifying}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#4ade80] px-5 py-2.5 text-sm font-semibold text-black transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {(isCheckoutBusy || isVerifying) ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -373,20 +419,20 @@ export default function PricingPage() {
 
               <Link
                 href="/app/dashboard"
-                className="inline-flex items-center justify-center rounded-xl border border-[#2B3441] bg-transparent px-5 py-2.5 text-sm font-semibold text-[#E6EDF3] transition hover:bg-[#1A2230]"
+                className="inline-flex items-center justify-center rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary"
               >
                 Back to dashboard
               </Link>
 
-              {isGrowthActive && settings.data?.razorpay_subscription_id && (
+              {canCancelSubscription && (
                 <button
                   type="button"
                   onClick={cancelGrowthSubscription}
                   disabled={isCancelling}
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-400/30 bg-red-500/10 px-5 py-2.5 text-sm font-semibold text-red-200 transition hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-destructive/30 bg-destructive/10 px-5 py-2.5 text-sm font-semibold text-destructive transition hover:bg-destructive/20 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {isCancelling && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Cancel subscription
+                  Unsubscribe
                 </button>
               )}
             </div>
