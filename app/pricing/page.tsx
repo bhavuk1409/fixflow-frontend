@@ -349,7 +349,9 @@ export default function PricingPage() {
             </div>
           ) : settings.isError ? (
             <p className="mt-6 text-sm text-red-300">
-              Unable to load billing settings. Please refresh and try again.
+              {settings.error instanceof Error
+                ? settings.error.message
+                : "Unable to load billing settings. Please refresh and try again."}
             </p>
           ) : (
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
