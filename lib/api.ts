@@ -113,7 +113,7 @@ export type RazorpayVerifySubscriptionResponse = {
 };
 
 export type RazorpayCancelSubscriptionResponse = {
-  status: "cancelled";
+  status: "cancelled" | "cancel_requested";
   subscription_id: string;
 };
 

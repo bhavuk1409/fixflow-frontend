@@ -258,11 +258,11 @@ export default function DashboardPage() {
             <div>
               <p className="text-[13px] font-semibold leading-tight text-foreground">Plan limits are active</p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                Starter includes 1 company, 5 AI CFO queries/month, and 2 reports/month.{" "}
+                Starter includes 1 company, AI CFO locked, and 2 reports/month.{" "}
                 <Link href="/pricing" className="font-semibold text-primary hover:underline">
                   Upgrade to Growth
                 </Link>
-                {" "}for higher limits.
+                {" "}for AI CFO, unlimited reports, and up to 3 companies.
               </p>
             </div>
           </div>

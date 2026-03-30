@@ -144,10 +144,11 @@ export default function PricingPage() {
     settings.data?.plan_active && settings.data?.plan_id === "growth",
   );
   const subscriptionStatus = (settings.data?.razorpay_subscription_status || "").toLowerCase();
+  const isCancelRequested = subscriptionStatus === "cancel_requested";
   const hasSubscriptionId = Boolean(settings.data?.razorpay_subscription_id);
   const canCancelSubscription =
     hasSubscriptionId &&
-    !["cancelled", "completed", "expired", "halted"].includes(subscriptionStatus);
+    !["cancelled", "completed", "expired", "halted", "cancel_requested"].includes(subscriptionStatus);
   const razorpayThemeColor = resolvedTheme === "light" ? "#2563eb" : "#3b82f6";
 
   const startGrowthSubscription = async () => {
@@ -253,14 +254,18 @@ export default function PricingPage() {
       toast.error("Unable to resolve tenant.");
       return;
     }
-    if (!window.confirm("Unsubscribe from Growth now? This will stop recurring auto-pay.")) {
+    if (!window.confirm("Unsubscribe from Growth? It will stop auto-renewal at the end of current billing cycle.")) {
       return;
     }
 
     setIsCancelling(true);
     try {
-      await api.payments.cancelRazorpaySubscription(tenantId);
-      toast.success("Subscription cancelled.");
+      const cancelRes = await api.payments.cancelRazorpaySubscription(tenantId);
+      if (cancelRes.data.status === "cancel_requested") {
+        toast.success("Unsubscribe scheduled. Growth remains active until cycle end.");
+      } else {
+        toast.success("Subscription cancelled.");
+      }
       await settings.refetch();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to cancel subscription.";
@@ -332,12 +337,16 @@ export default function PricingPage() {
             <div className="flex items-start justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-foreground">
-                  {isGrowthActive ? "Growth is active" : "Starter is active"}
+                  {isGrowthActive
+                    ? (isCancelRequested ? "Growth is active (cancel scheduled)" : "Growth is active")
+                    : "Starter is active"}
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground">
                   {isGrowthActive
-                    ? "You have paid limits for companies, AI CFO, and reports."
-                    : "Starter includes 1 company, 5 AI CFO queries/month, and 2 reports/month."}
+                    ? (isCancelRequested
+                      ? "Current month remains active. It will auto-downgrade to Starter at cycle end."
+                      : "You have paid limits for companies, AI CFO, and reports.")
+                    : "Starter includes 1 company, AI CFO locked, and 2 reports/month."}
                 </p>
               </div>
               {isGrowthActive ? (
@@ -356,15 +365,15 @@ export default function PricingPage() {
             <ul className="mt-4 space-y-2 text-sm text-foreground">
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                Up to 5 Tally companies
+                {isGrowthActive ? "Up to 3 Tally companies" : "1 Tally company"}
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                Unlimited AI CFO queries
+                {isGrowthActive ? "Unlimited AI CFO queries" : "AI CFO available on Growth only"}
               </li>
               <li className="flex items-center gap-2">
                 <ShieldCheck className="h-4 w-4 text-primary" />
-                Unlimited report generation + weekly automation
+                {isGrowthActive ? "Unlimited report generation + weekly automation" : "2 reports/month"}
               </li>
             </ul>
 
@@ -380,7 +389,7 @@ export default function PricingPage() {
               <p className="mt-1 text-xs text-muted-foreground">
                 Status:{" "}
                 <span className="font-medium capitalize text-foreground">
-                  {settings.data.razorpay_subscription_status}
+                  {settings.data.razorpay_subscription_status.replace(/_/g, " ")}
                 </span>
               </p>
             )}

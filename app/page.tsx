@@ -363,7 +363,7 @@ export default function LandingPage() {
                     "1 Tally company",
                     "Live P&L & cashflow",
                     "Basic receivables & payables",
-                    "5 AI CFO queries / month",
+                    "AI CFO available on Growth only",
                     "2 reports / month",
                     "Email support",
                   ],
@@ -373,7 +373,7 @@ export default function LandingPage() {
                   name: "Growth", price: "₹299", period: "/month",
                   features: [
                     "For growing businesses",
-                    "Up to 5 Tally companies",
+                    "Up to 3 Tally companies",
                     "Full financial intelligence suite",
                     "Unlimited AI CFO queries",
                     "Weekly automated reports",
