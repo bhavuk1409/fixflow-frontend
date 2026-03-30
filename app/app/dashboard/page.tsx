@@ -47,6 +47,12 @@ type MonthlyChartPoint = {
   net: number;
 };
 
+type BillingSettings = {
+  plan_active: boolean;
+  plan_id: string | null;
+  razorpay_subscription_status: string | null;
+};
+
 // Section header sub-component
 function SectionHeader({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
@@ -138,6 +144,12 @@ export default function DashboardPage() {
     enabled: !!tenantId,
   });
 
+  const billingSettings = useQuery({
+    queryKey: ["settings", tenantId],
+    queryFn: () => api.settings.get(tenantId).then((r) => r.data as BillingSettings),
+    enabled: !!tenantId,
+  });
+
   const companyList = useMemo(
     () => (companies.data?.companies ?? []) as Array<{ id: string; name: string }>,
     [companies.data?.companies],
@@ -145,6 +157,11 @@ export default function DashboardPage() {
   const activeCompany = companyList.find((c: { id: string; name: string }) => c.id === companyId);
   const selectedCompanyId = activeCompany?.id ?? "";
   const enabled = !!selectedCompanyId;
+  const isGrowthActive = Boolean(
+    billingSettings.data?.plan_active && billingSettings.data?.plan_id === "growth",
+  );
+  const growthCancelScheduled =
+    (billingSettings.data?.razorpay_subscription_status || "").toLowerCase() === "cancel_requested";
 
   useEffect(() => {
     if (!companies.isSuccess) return;
@@ -257,13 +274,25 @@ export default function DashboardPage() {
             <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <div>
               <p className="text-[13px] font-semibold leading-tight text-foreground">Plan limits are active</p>
-              <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                Starter includes 1 company, AI CFO locked, and 2 reports/month.{" "}
-                <Link href="/pricing" className="font-semibold text-primary hover:underline">
-                  Upgrade to Growth
-                </Link>
-                {" "}for AI CFO, unlimited reports, and up to 3 companies.
-              </p>
+              {isGrowthActive ? (
+                <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                  {growthCancelScheduled
+                    ? "Growth is active for current cycle. It auto-downgrades to Starter at cycle end."
+                    : "Growth is active: AI CFO unlocked, unlimited reports, and up to 3 companies."}{" "}
+                  <Link href="/pricing" className="font-semibold text-primary hover:underline">
+                    Manage billing
+                  </Link>
+                  .
+                </p>
+              ) : (
+                <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
+                  Starter includes 1 company, AI CFO locked, and 2 reports/month.{" "}
+                  <Link href="/pricing" className="font-semibold text-primary hover:underline">
+                    Upgrade to Growth
+                  </Link>
+                  {" "}for AI CFO, unlimited reports, and up to 3 companies.
+                </p>
+              )}
             </div>
           </div>
         </div>

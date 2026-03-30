@@ -224,6 +224,25 @@ export default function PricingPage() {
             router.push("/app/dashboard");
           } catch (error) {
             const message = error instanceof Error ? error.message : "Subscription verification failed.";
+            const maybeProviderDelay = message.toLowerCase().includes("payment does not match subscription");
+            if (maybeProviderDelay) {
+              for (let attempt = 0; attempt < 3; attempt += 1) {
+                await new Promise((resolve) => setTimeout(resolve, 2000));
+                try {
+                  const latest = await api.settings.get(tenantId);
+                  const current = latest.data as BillingSettings;
+                  const growthActive = Boolean(current.plan_active && current.plan_id === "growth");
+                  if (growthActive) {
+                    toast.success("Payment received. Growth is active.");
+                    await settings.refetch();
+                    router.push("/app/dashboard");
+                    return;
+                  }
+                } catch {
+                  // Keep retrying.
+                }
+              }
+            }
             toast.error(message);
           } finally {
             setIsVerifying(false);
