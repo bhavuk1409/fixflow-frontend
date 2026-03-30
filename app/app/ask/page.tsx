@@ -368,7 +368,53 @@ export default function AskPage() {
   const isGrowthActive = Boolean(
     billingSettings.data?.plan_active && billingSettings.data?.plan_id === "growth",
   );
-  const isAICfoLocked = billingSettings.isSuccess && !isGrowthActive;
+
+  if (billingSettings.isLoading) {
+    return (
+      <div className="relative flex h-[calc(100vh-0px)] flex-col overflow-hidden bg-background">
+        <Topbar title="AI CFO" />
+        <div className="flex flex-1 items-center justify-center px-4">
+          <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-3 text-sm text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading billing status...
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (billingSettings.isError) {
+    return (
+      <div className="relative flex h-[calc(100vh-0px)] flex-col overflow-hidden bg-background">
+        <Topbar title="AI CFO" />
+        <div className="flex flex-1 items-center justify-center px-4">
+          <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-8 text-center shadow-card">
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground">Unable to load plan status</h2>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+              We could not verify billing for this workspace, so AI CFO is temporarily locked.
+            </p>
+            <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              <button
+                type="button"
+                onClick={() => void billingSettings.refetch()}
+                className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+              >
+                Retry
+              </button>
+              <Link
+                href="/pricing"
+                className="inline-flex items-center justify-center rounded-xl border border-border bg-card px-5 py-2.5 text-sm font-semibold text-foreground transition hover:bg-secondary"
+              >
+                Manage billing
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const isAICfoLocked = !isGrowthActive;
 
   if (isAICfoLocked) {
     return (
