@@ -198,7 +198,8 @@ export default function PricingPage() {
           color: razorpayThemeColor,
         },
         method: {
-          upi: false,
+          // Enable UPI mandate flow for recurring autopay subscriptions.
+          upi: true,
           card: true,
           netbanking: true,
           wallet: false,
