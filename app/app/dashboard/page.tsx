@@ -256,9 +256,13 @@ export default function DashboardPage() {
           <div className="flex items-start gap-2.5">
             <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-primary" />
             <div>
-              <p className="text-[13px] font-semibold leading-tight text-foreground">All features are free</p>
+              <p className="text-[13px] font-semibold leading-tight text-foreground">Plan limits are active</p>
               <p className="mt-0.5 text-[11px] leading-relaxed text-muted-foreground">
-                Billing is disabled. You can use dashboard, reports, and AI CFO without a paid plan.
+                Starter includes 1 company, 5 AI CFO queries/month, and 2 reports/month.{" "}
+                <Link href="/pricing" className="font-semibold text-primary hover:underline">
+                  Upgrade to Growth
+                </Link>
+                {" "}for higher limits.
               </p>
             </div>
           </div>

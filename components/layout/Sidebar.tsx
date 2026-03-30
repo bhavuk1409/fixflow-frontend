@@ -8,6 +8,7 @@ import {
   Home,
   Menu,
   PlugZap,
+  CreditCard,
   Settings2,
   X,
 } from "lucide-react";
@@ -32,7 +33,10 @@ const mainNavItems = [
   { href: "/app/ask", icon: Home, label: "AI CFO" },
 ];
 
-const bottomNavItems = [{ href: "/app/settings", icon: Settings2, label: "Settings" }];
+const bottomNavItems = [
+  { href: "/pricing", icon: CreditCard, label: "Billing" },
+  { href: "/app/settings", icon: Settings2, label: "Settings" },
+];
 const navItems = [...mainNavItems, ...bottomNavItems];
 
 function RailLink({

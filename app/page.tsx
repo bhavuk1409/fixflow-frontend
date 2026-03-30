@@ -370,7 +370,7 @@ export default function LandingPage() {
                   cta: "Get started free", href: "/sign-up", highlight: false,
                 },
                 {
-                  name: "Growth", price: "₹99", period: "/month",
+                  name: "Growth", price: "₹299", period: "/month",
                   features: [
                     "For growing businesses",
                     "Up to 5 Tally companies",
