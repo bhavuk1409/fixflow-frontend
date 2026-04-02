@@ -207,12 +207,12 @@ export function buildApi() {
         ),
       receivables: async (tenantId: string, companyId: string, asOf: string, limit = 10) =>
         apiFetch(
-          `/insights/${tenantId}/companies/${companyId}/receivables?as_of=${asOf}&limit=${limit}`,
+          `/insights/${tenantId}/companies/${companyId}/receivables?as_of_date=${asOf}`,
           { method: "GET" },
         ),
       payables: async (tenantId: string, companyId: string, asOf: string, limit = 10) =>
         apiFetch(
-          `/insights/${tenantId}/companies/${companyId}/payables?as_of=${asOf}&limit=${limit}`,
+          `/insights/${tenantId}/companies/${companyId}/payables?as_of_date=${asOf}`,
           { method: "GET" },
         ),
     },
