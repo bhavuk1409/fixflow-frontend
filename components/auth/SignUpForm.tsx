@@ -4,6 +4,7 @@ import { useSignUp } from "@clerk/nextjs";
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { buildApi } from "@/lib/api";
 
 /* ── OAuth provider icons ───────────────────────────────────────────────── */
 const GoogleIcon = () => (
@@ -92,6 +93,11 @@ export function SignUpForm() {
       const result = await signUp.attemptEmailAddressVerification({ code });
       if (result.status === "complete") {
         await setActive({ session: result.createdSessionId });
+
+        // Send welcome email (fire-and-forget — never blocks redirect)
+        const name = [firstName, lastName].filter(Boolean).join(" ") || undefined;
+        buildApi().auth.welcome(email, name).catch(() => {});
+
         router.push("/app/dashboard");
       }
     } catch (err: any) {

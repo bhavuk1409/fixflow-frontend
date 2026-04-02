@@ -9,8 +9,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { isoDate, lastNDays } from "./utils";
 import { getTenantId, getCompanyId } from "./auth";
-import { useOrganization, useUser, useAuth } from "@clerk/nextjs";
-import { buildApi } from "./api";
+import { useOrganization, useUser } from "@clerk/nextjs";
 
 interface AppState {
   tenantId: string;
@@ -58,28 +57,6 @@ export function AppStateProvider({ children }: { children: React.ReactNode }) {
     const resolved = getCompanyId(stored);
     setCompanyId(resolved || (process.env.NEXT_PUBLIC_DEFAULT_COMPANY_ID ?? ""));
   }, [storageKey, user?.id]);
-
-  // ── Send welcome email once after first signup ────────────────────────────
-  const { getToken } = useAuth();
-  useEffect(() => {
-    if (!user?.id || typeof window === "undefined") return;
-    const welcomeKey = `fixflow_welcome_sent_${user.id}`;
-    if (localStorage.getItem(welcomeKey)) return; // Already sent
-
-    const email = user.primaryEmailAddress?.emailAddress;
-    if (!email) return;
-
-    const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined;
-
-    // Fire and forget — never block the UI
-    getToken().then((token) => {
-      if (!token) return;
-      const api = buildApi();
-      api.auth.welcome(email, name).then(() => {
-        localStorage.setItem(welcomeKey, "1");
-      }).catch(() => {}); // Swallow errors silently
-    }).catch(() => {});
-  }, [user?.id]);
 
   const [dateRange, setDateRangeRaw] = useState<{ from: Date; to: Date }>(
     () => lastNDays(30),
