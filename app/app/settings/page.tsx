@@ -249,7 +249,12 @@ export default function SettingsPage() {
 
   useEffect(() => {
     if (settings.data?.report_email) {
-      setRecipients([settings.data.report_email]);
+      setRecipients(
+        settings.data.report_email
+          .split(",")
+          .map((e: string) => e.trim())
+          .filter(Boolean)
+      );
     }
   }, [settings.data]);
 
@@ -272,16 +277,17 @@ export default function SettingsPage() {
   const handleAddRecipient = () => {
     const res = recipientEmailSchema.safeParse(emailInput.trim());
     if (!res.success) { toast.error("Invalid email address."); return; }
-    const updated = Array.from(new Set([...recipients, emailInput.trim()]));
+    if (recipients.includes(emailInput.trim())) { toast.error("Email already added."); return; }
+    const updated = [...recipients, emailInput.trim()];
     setRecipients(updated);
     setEmailInput("");
-    saveSettings.mutate({ report_email: updated[0] });
+    saveSettings.mutate({ report_email: updated.join(", ") });
   };
 
   const handleRemoveRecipient = (email: string) => {
     const updated = recipients.filter((r) => r !== email);
     setRecipients(updated);
-    saveSettings.mutate({ report_email: updated[0] ?? null });
+    saveSettings.mutate({ report_email: updated.length > 0 ? updated.join(", ") : null });
   };
 
   return (
